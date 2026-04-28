@@ -5847,3 +5847,9 @@ var ddd=[
 ["2007-01-02(二)","33","02","37","12","36"],
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
+
+var bbb = ddd.map(item => {
+    let dateNum = Number(item[0].replace(/\D/g, ''));
+    let nums = item.slice(1).map(Number).sort((a, b) => a - b);
+    return [dateNum, ...nums];
+});
