@@ -5855,6 +5855,7 @@ var bbb = ddd.map((item, index) => {
     let nums = item.slice(1)
         .map(n => String(n).padStart(2, '0'))
         .sort(); 
+    let nums = [nums]
     let currentId = String(latestId - index);
     return [dateStr, ...nums, currentId];
 });
