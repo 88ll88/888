@@ -5848,18 +5848,12 @@ var ddd=[
 ["2007-01-02(二)","33","02","37","12","36"],
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
-var latestId = 115104; // 設定最新一期的編號
-var bbb = ddd.map((item, index) => {
-    // 1. 日期轉數字 (YYYYMMDD)
-    let dateNum = Number(item[0].replace(/\D/g, ''));
-    
-    // 2. 號碼部分轉數字並排序 (從索引 1 開始抓)
+var latestId = 115104; 
+var bbb = aaa.map((item, index) => {
+    let dateStr = item[0];
     let nums = item.slice(1)
-        .map(Number)
-        .sort((a, b) => a - b);
-    
-    // 3. ID 計算：最新 ID 扣掉 index
-    let currentId = latestId - index;
-    
-    return [dateNum, ...nums, currentId];
+        .map(n => String(n).padStart(2, '0'))
+        .sort(); 
+    let currentId = String(latestId - index);
+    return [dateStr, ...nums, currentId];
 });
