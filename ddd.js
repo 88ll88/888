@@ -5849,7 +5849,7 @@ var ddd=[
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
 var latestId = 115104; 
-var bbb ddd.map((item, index) => {
+var bbb = ddd.map((item, index) => {
     let dateStr = item[0];
     let nums = item.slice(1)
         .map(n => String(n).padStart(2, '0'))
