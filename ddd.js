@@ -5848,7 +5848,7 @@ var ddd=[
 ["2007-01-02(二)","33","02","37","12","36"],
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
-var bbb = ddd.map((item, index) => {
+var bbb = ddd.map((item) => {
     let dateStr = item[0];
     let nums = item.slice(1,6)
         .map(n => String(n).padStart(2, '0'))
