@@ -5849,12 +5849,16 @@ var ddd=[
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
 
-//var latestId = 115104; 
-var bbb = ddd.map((item) => {
+var latestId = 115104; 
+var bbb = ddd.map((item, index) => { // 1. 這裡加回 index
     let dateStr = item[0];
-    let nums = item.slice(1,6)
+    let nums = item.slice(1, 6)
         .map(n => String(n).padStart(2, '0'))
         .sort(); 
-   // let currentId = String(latestId - index);
-    return [dateStr,nums];
+    
+    // 2. 計算期數：用總期數減去索引
+    let currentId = String(latestId - index);
+
+    // 3. 放回 return，格式：[日期, [號碼陣列], 期數]
+    return [dateStr, nums, currentId];
 });
