@@ -1,1 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>539 統計分析</title>
+    <style>
+        /* 控制外觀：WxH=20x20，字體 12px */
+        body { font-family: monospace; margin: 0; padding: 10px; }
+        .row { display: flex; height: 20px; line-height: 20px; text-align: center; font-size: 12px; }
+        .cell { border: 1px solid #ccc; box-sizing: border-box; overflow: hidden; }
+        
+        /* 寬度定義 */
+        .w100 { width: 100px; flex-shrink: 0; }
+        .w200 { width: 200px; flex-shrink: 0; }
+        
+        /* 標題：黑底白字白框 */
+        .header { background: #000; color: #fff; font-weight: bold; }
+        .header .cell { border: 1px solid #fff; }
+        
+        /* 第 11 列平均列：灰底 */
+        .avg-row { background: #eee; font-weight: bold; }
+        .nav { background: #ddd; padding: 2px 10px; margin-bottom: 5px; width: fit-content; }
+    </style>
+</head>
+<body>
 
+<div class="nav">[統計]</div>
+<div id="table"></div>
+
+<!-- 關鍵：讀取旁邊的數據檔 -->
+<script src="ddd.js"></script>
+
+<script>
+// 1. 建立 zzz 陣列（這就是你要求的運算邏輯）
+const zzz = ddd.slice(0, 20).map(item => {
+    const date = item[0];
+    const nums = item[1]; 
+    const n = nums.map(Number).sort((a, b) => a - b);
+    
+    const oddEven = nums.map(x => (parseInt(x) % 2 !== 0 ? '單' : '双')).join('');
+    const sum = n.reduce((a, b) => a + b, 0);
+    const avg = Math.floor(sum / 5);
+    const diff = n[4] - n[0];
+    const firstSum = n.reduce((a, b) => a + Math.floor(b / 10), 0);
+    const lastSum = n.reduce((a, b) => a + (b % 10), 0);
+    
+    // 同尾：5個號碼尾數不重複就是無
+    const tails = n.map(x => x % 10);
+    const isSameTail = new Set(tails).size !== 5 ? "有同尾" : "--";
+    
+    // 連號：判斷相鄰數字差是否為 1
+    let isSerial = "--";
+    for(let i=0; i<n.length-1; i++) { if(n[i+1]-n[i]===1) isSerial = "有連號"; }
+
+    return [date, nums.join(','), oddEven, sum, avg, diff, firstSum, lastSum, isSameTail, isSerial];
+});
+
+// 2. 把它畫出來
+function render() {
+    let h = '';
+    // 標題列
+    h += `<div class="row header">
+        <div class="cell w100">日期</div><div class="cell w100">開獎號碼</div>
+        <div class="cell w100">單双</div><div class="cell w100">和值</div>
+        <div class="cell w100">均值</div><div class="cell w100">首尾差</div>
+        <div class="cell w100">首數和</div><div class="cell w100">尾數和</div>
+        <div class="cell w100">同尾</div><div class="cell w100">連號</div>
+        <div class="cell w200" style="background:#fff; border:none;"></div>
+    </div>`;
+
+    zzz.forEach((r, i) => {
+        // 第 11 列（索引 10）放平均列
+        if (i === 10) {
+            h += `<div class="row avg-row">
+                <div class="cell w200">平均</div>
+                <div class="cell w100">--</div><div class="cell w100">和平均</div>
+                <div class="cell w100">均平均</div><div class="cell w100">差平均</div>
+                <div class="cell w100">首平均</div><div class="cell w100">尾平均</div>
+                <div class="cell w100"></div><div class="cell w200" style="background:#fff; border:none;"></div>
+            </div>`;
+        }
+        // 資料列
+        h += `<div class="row">`;
+        r.forEach(val => h += `<div class="cell w100">${val}</div>`);
+        h += `<div class="cell w200" style="border:none;"></div></div>`;
+    });
+    document.getElementById('table').innerHTML = h;
+}
+render();
+</script>
+</body>
+</html>
