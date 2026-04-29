@@ -5852,9 +5852,9 @@ var ddd=[
 var latestId = 115104; 
 var bbb = ddd.map((item, index) => {
     let dateStr = item[0];
-    let nums = item.slice(1)
+    let nums = item.slice(1,6)
         .map(n => String(n).padStart(2, '0'))
-        .sort(); 
-    let currentId = String(latestId - index);
-    return [dateStr, ...nums, currentId];
+        .sort();
+    let currentId = String(latestId - index); 
+    return [dateStr, nums, currentId]
 });
