@@ -5850,15 +5850,16 @@ var ddd=[
 ];
 
 var latestId = 115104; 
-var bbb = ddd.map((item, index) => { // 1. 這裡加回 index
+var bbb = ddd.map((item, index) => {
     let dateStr = item[0];
-    let nums = item.slice(1, 6)
-        .map(n => String(n).padStart(2, '0'))
-        .sort(); 
-    
-    // 2. 計算期數：用總期數減去索引
+    let nums = item.slice(1,6).map(n => String(n).padStart(2, '0')).sort(); 
     let currentId = String(latestId - index);
-
-    // 3. 放回 return，格式：[日期, [號碼陣列], 期數]
     return [dateStr, nums, currentId];
 });
+var zzz=ddd.map((item,index) => {
+     var date = item[0];
+     var olds = item.slice(1, 6);
+     var news = olds.map(n => String(n).padStart(2, '0')).sort(); 
+     var currentId = String(latestId - index);
+     return [date,news, olds,currentId];
+    });
