@@ -5883,7 +5883,7 @@ var zzz = ddd.map((item, index) => {
 
     // 回傳目標格式：[日期, [順序排序], [落球序], 期次]
     return [dateStr, news, originalOrder, currentId];
-});
+});//aa
 
 function TT(x){
        var xz= Array(40).fill(0);
