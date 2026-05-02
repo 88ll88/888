@@ -5863,7 +5863,7 @@ var zzz=ddd.map((item,index) => {
      var date = item[0];
      var olds = item.slice(1, 6);
      var news = olds.map(n => String(n).padStart(2, '0')).sort(); 
-     var currentId = String(latestId + index);
+     var currentId = String(latestId + (ddd.length - 1 - index));
      return [date,news, olds,currentId];
     });
 function TT(x){
