@@ -5861,41 +5861,30 @@ var baseId = 115104;
 var baseDateStr = "2026-04-28(二)";
 
 var zzz = ddd.map((item, index) => {
-    var dateStr = item[0];
-    var olds = item.slice(1, 6);
+    var dateStr = item[0]; // "2026-05-01(五)"
+    var olds = item.slice(1, 6); // 取出落球序原始號碼
+    
+    // 1. 處理 [順序排序]：補零、轉字串、排序
     var news = olds.map(n => String(n).padStart(2, '0')).sort(); 
+    
+    // 2. 處理 [落球序]：僅補零，維持原始輸入順序
+    var originalOrder = olds.map(n => String(n).padStart(2, '0'));
 
-    // 1. 找出基準日期在目前陣列中的索引位置
+    // 3. 計算 [期次]
+    // 找出基準日期在陣列中的位置
     var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
-    var currentId = "";
+    var currentId = 0;
 
-    // 2. 判斷是否為週日：週日不編號
-    if (dateStr.includes("(日)")) {
-        currentId = "休息"; 
-    } 
-    else if (pivotIndex !== -1) {
-        // 3. 抓取區間：從「當前位置」到「基準位置」
-        var start = Math.min(index, pivotIndex);
-        var end = Math.max(index, pivotIndex);
-        var range = ddd.slice(start, end + 1);
-
-        // 4. 統計區間內「非週日」的資料筆數
-        // .filter 會留下所有不是週日的日子，.length 則是這些日子的總數
-        var workingDaysCount = range.filter(row => !row[0].includes("(日)")).length;
-
-        // 5. 計算偏移量：總工作日天數扣除基準日當天
-        var offset = workingDaysCount - 1;
-
-        // 6. 根據索引新舊決定加減 (index 越小代表日期越新)
-        if (index <= pivotIndex) {
-            currentId = String(baseId + offset); // 未來日期：加
-        } else {
-            currentId = String(baseId - offset); // 過去日期：減
-        }
+    if (pivotIndex !== -1) {
+        // 因為資料由新到舊，index 越小代表日期越新
+        // 期次 = 基準ID + (基準索引 - 當前索引)
+        currentId = baseId + (pivotIndex - index);
     }
 
-    return [dateStr, news, olds, currentId];
+    // 回傳目標格式：[日期, [順序排序], [落球序], 期次]
+    return [dateStr, news, originalOrder, currentId];
 });
+
 function TT(x){
        var xz= Array(40).fill(0);
        ddd.slice(0, x).map(r =>r[1].map(n => xz[Number(n)]++));
