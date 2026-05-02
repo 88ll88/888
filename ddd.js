@@ -5865,11 +5865,11 @@ var zzz = ddd.map((item, index) => {
     var olds = item.slice(1, 6);
     var news = olds.map(n => String(n).padStart(2, '0')).sort(); 
 
-    // 1. 找出基準日期在陣列中的索引
+    // 1. 找出基準日期在目前陣列中的索引位置
     var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
     var currentId = "";
 
-    // 2. 如果當前日期就是週日，直接標記
+    // 2. 判斷是否為週日：週日不編號
     if (dateStr.includes("(日)")) {
         currentId = "休息"; 
     } 
@@ -5879,14 +5879,18 @@ var zzz = ddd.map((item, index) => {
         var end = Math.max(index, pivotIndex);
         var range = ddd.slice(start, end + 1);
 
-        // 4. 計算區間內排除週日後的有效天數差 (不計入基準日當天)
-        var validDays = range.filter(row => !row[0].includes("(日)")).length - 1;
+        // 4. 統計區間內「非週日」的資料筆數
+        // .filter 會留下所有不是週日的日子，.length 則是這些日子的總數
+        var workingDaysCount = range.filter(row => !row[0].includes("(日)")).length;
 
-        // 5. 根據日期新舊決定加法或減法
+        // 5. 計算偏移量：總工作日天數扣除基準日當天
+        var offset = workingDaysCount - 1;
+
+        // 6. 根據索引新舊決定加減 (index 越小代表日期越新)
         if (index <= pivotIndex) {
-            currentId = String(baseId + validDays); // 比 04-28 新，往上加
+            currentId = String(baseId + offset); // 未來日期：加
         } else {
-            currentId = String(baseId - validDays); // 比 04-28 舊，往下減
+            currentId = String(baseId - offset); // 過去日期：減
         }
     }
 
