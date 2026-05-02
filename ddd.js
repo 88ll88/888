@@ -5851,21 +5851,47 @@ var ddd=[
 ["2007-01-02(二)","33","02","37","12","36"],
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
-
-var latestId = 115104; 
 var bbb = ddd.map((item, index) => {
     let dateStr = item[0];
     let nums = item.slice(1,6).map(n => String(n).padStart(2, '0')).sort(); 
     let currentId = String(latestId + index);
     return [dateStr, nums, currentId];
 });
-var zzz=ddd.map((item,index) => {
-     var date = item[0];
-     var olds = item.slice(1, 6);
-     var news = olds.map(n => String(n).padStart(2, '0')).sort(); 
-     var currentId = String(latestId + (ddd.length - 1 - index));
-     return [date,news, olds,currentId];
-    });
+var baseId = 115104; 
+var baseDateStr = "2026-04-28(二)";
+
+var zzz = ddd.map((item, index) => {
+    var dateStr = item[0];
+    var olds = item.slice(1, 6);
+    var news = olds.map(n => String(n).padStart(2, '0')).sort(); 
+
+    // 1. 找出基準日期在陣列中的索引
+    var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
+    var currentId = "";
+
+    // 2. 如果當前日期就是週日，直接標記
+    if (dateStr.includes("(日)")) {
+        currentId = "休息"; 
+    } 
+    else if (pivotIndex !== -1) {
+        // 3. 抓取區間：從「當前位置」到「基準位置」
+        var start = Math.min(index, pivotIndex);
+        var end = Math.max(index, pivotIndex);
+        var range = ddd.slice(start, end + 1);
+
+        // 4. 計算區間內排除週日後的有效天數差 (不計入基準日當天)
+        var validDays = range.filter(row => !row[0].includes("(日)")).length - 1;
+
+        // 5. 根據日期新舊決定加法或減法
+        if (index <= pivotIndex) {
+            currentId = String(baseId + validDays); // 比 04-28 新，往上加
+        } else {
+            currentId = String(baseId - validDays); // 比 04-28 舊，往下減
+        }
+    }
+
+    return [dateStr, news, olds, currentId];
+});
 function TT(x){
        var xz= Array(40).fill(0);
        ddd.slice(0, x).map(r =>r[1].map(n => xz[Number(n)]++));
