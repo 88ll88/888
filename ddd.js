@@ -5851,12 +5851,7 @@ var ddd=[
 ["2007-01-02(二)","33","02","37","12","36"],
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
-var bbb = ddd.map((item, index) => {
-    let dateStr = item[0];
-    let nums = item.slice(1,6).map(n => String(n).padStart(2, '0')).sort(); 
-    let currentId = String(latestId + index);
-    return [dateStr, nums, currentId];
-});
+
 var baseId = 115104; 
 var baseDateStr = "2026-04-28(二)";
 
@@ -5883,7 +5878,7 @@ var zzz = ddd.map((item, index) => {
 
     // 回傳目標格式：[日期, [順序排序], [落球序], 期次]
     return [dateStr, news, originalOrder, currentId];
-});//aa
+});
 
 function TT(x){
        var xz= Array(40).fill(0);
