@@ -5877,7 +5877,7 @@ var zzz = ddd.map((item, index) => {
         currentId = baseId + (pivotIndex - index);
     }
 
-    // 回傳目標格式：[日期, [順序排序], [落球序], 期次]
+    // 回傳目標格式：[日期, [順序排序], [落球序], 期次]ㄅㄅㄆㄆ
     return [dateStr, news, originalOrder, currentId];
 });
 
