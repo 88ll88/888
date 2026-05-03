@@ -5855,32 +5855,18 @@ var ddd=[
 
 var baseId = 115104; 
 var baseDateStr = "2026-04-28(二)";
-
 var zzz = ddd.map((item, index) => {
-    var dateStr = item[0]; // "2026-05-01(五)"
-    var olds = item.slice(1, 6); // 取出落球序原始號碼
-    
-    // 1. 處理 [順序排序]：補零、轉字串、排序
-    var news = olds.map(n => String(n).padStart(2, '0')).sort(); 
-    
-    // 2. 處理 [落球序]：僅補零，維持原始輸入順序
+    var dateStr = item[0];
+    var olds = item.slice(1, 6);
+    var news = olds.map(n => String(n).padStart(2, '0')).sort();
     var originalOrder = olds.map(n => String(n).padStart(2, '0'));
-
-    // 3. 計算 [期次]
-    // 找出基準日期在陣列中的位置
     var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
     var currentId = 0;
-
-    if (pivotIndex !== -1) {
-        // 因為資料由新到舊，index 越小代表日期越新
-        // 期次 = 基準ID + (基準索引 - 當前索引)
+    if (pivotIndex !== -1){
         currentId = baseId + (pivotIndex - index);
     }
-
-    // 回傳目標格式：[日期, [順序排序], [落球序], 期次]ㄅㄅㄆㄆ
     return [dateStr, news, originalOrder, currentId];
 });
-
 function TT(x){
        var xz= Array(40).fill(0);
        ddd.slice(0, x).map(r =>r[1].map(n => xz[Number(n)]++));
