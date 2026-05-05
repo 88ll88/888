@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+<script src="https://88ll88.github.io/888/ddd.js"></script>
+    <style>
+        /* 表格容器與基本樣式 */
+        #table-container {
+            width: 1200px;
+            margin auto auto;
+            color: #fff;
+        }
+
+        table {
+            border-collapse: collapse;
+            table-layout: fixed; /* 鎖定欄位寬度 */
+            width: 1200px;
+            background: #f6fcf6;
+            color: #000;
+            text-align: center;
+            box-sizing: border-box; 
+            font-size: 15px;
+        }
+
+        /* 統一高度設定 */
+        tr {
+            height: 25px;
+        }
+
+        td {
+            border: 0.5px solid #b0afac;
+            height: 25px;
+            line-height: 25px; /* 文字垂直置中 */
+            padding: 0;
+            box-sizing: border-box;
+           /* background:#484944;
+        }
+
+        /* 號碼區背景顏色分區 (可選) */
+        .bg-zone { width: 25px; }
+        
+        .sat-red { color: #e31919; font-weight: bold; }
+        .sat-green { color: #57b31b; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+<!-- 直接引入腳本，它會自動生成導航列並標記當前頁面 -->
+<script src="nav.js"></script>
+<!-- 導航列區塊 -->
+
+
+<!-- 表格區塊 -->
+<div id="table-container">
+    <table>
+        <thead>
+            <tr>
+                <td style="width: 100px;background:#484944; color:#fff;border:1px solid #fff">日期</td>
+                <td style="width: 100px;background:#484944; color:#fff;border:1px solid #fff">開獎號碼</td>
+                <td style="width: 120px;background:#a308bf; color:#fff;border:1px solid #fff">單双</td>
+                <td style="width: 120px;background:#a308bf; color:#fff;border:1px solid #fff">和值</td>
+                <td style="width: 120px;background:#a308bf; color:#fff;border:1px solid #fff">均值</td>   
+                <td style="width: 120px;background:#2a8416; color:#fff;border:1px solid #fff">首尾差</td>
+                <td style="width: 120px;background:#2a8416; color:#fff;border:1px solid #fff">首數和</td>
+                <td style="width: 120px;background:#2a8416; color:#fff;border:1px solid #fff">尾數和</td>
+                <td style="width: 140px;background:#f0a526; color:#fff;border:1px solid #fff">同尾</td>
+                <td style="width: 140px;background:#f0a526; color:#fff;border:1px solid #fff">連號</td>                     
+              <!--  <td id="demo" style="width: 100px; color:#fff;border:1px solid #fff;background:#0095c1">備註</td> -->
+           </tr>
+       </thead>
+<tbody id="myData">
+
+</tbody>
+</table>
+<script>
+function 單双(x){return x.map(num => (parseInt(num) % 2 !== 0 ? "單" : "双")).join("");}
+function 和值(x){return x.reduce((sum, num) => sum + Number(num), 0);}
+function 均值(x){return Math.floor(x.reduce((acc, cur) => acc + Number(cur), 0)/5)};
+function 首尾差(x){return Math.max(...x) - Math.min(...x);};
+function 首數和(x){return x.reduce((sum, num) => sum + Math.floor(Number(num) / 10), 0);}
+function 尾數和(x){return x.reduce((sum, num) => sum + (Number(num) % 10), 0);}
+function 同尾(x){
+    var counts = {};
+    x.forEach(num=>{let tail=Number(num)%10;counts[tail]=(counts[tail] || 0)+1;});
+    var result = Object.entries(counts)
+        .filter(([tail, count]) => count >= 2)
+        .map(([tail, count]) => `${tail}×${count}`)
+        .join('｜');
+    return result;
+}
+function 連號(x) {
+     var sorted = x.map(Number).sort((a, b) => a - b);
+     var sequences = [];
+     var temp = [sorted[0]];
+     for (let i = 1; i < sorted.length; i++) {
+             if (sorted[i] === sorted[i - 1] + 1) {
+                  temp.push(sorted[i]);
+             } else {
+                         if (temp.length >= 2) sequences.push(temp.map(n => String(n).padStart(2, '0')).join('+'));                         
+                         temp = [sorted[i]];
+             }
+      }        
+      if (temp.length >= 2) sequences.push(temp.map(n => String(n).padStart(2, '0')).join('+'));      
+      return (sequences.join('｜') || "");
+}
+</script>
+<script>
+function renderTable() {
+var s=[];
+for(var k=0;k<=25;k++){
+      s.push(zzz[k])
+}
+    var tableBody = '';
+    for (var i = 0; i <s.length; i++) {
+        var dateStr=s[i][0];
+        var nums=s[i][1];
+        var cls =  (i == 0) ? 'sat-red' : (dateStr.includes("六") ? 'sat-green' : '');                    
+        tableBody += '<tr>';
+        tableBody += '<td class="' + cls + '" '+ 'style="background:#484944; color:#fff">' + dateStr + '</td>';
+        tableBody += '<td class="' + cls + '" ' + 'style="background:#484944; color:#fff">' + nums.join(',') + '</td>';
+        tableBody += '<td>' + 單双(s[i][1]) + '</td>';
+        tableBody += '<td>' + 和值(s[i][1]) + '</td>';
+        tableBody += '<td>' + 均值(s[i][1]) + '</td>';
+        tableBody += '<td>' + 首尾差(s[i][1]) + '</td>';
+        tableBody += '<td>' + 首數和(s[i][1]) + '</td>';
+        tableBody += '<td>' + 尾數和(s[i][1]) + '</td>';
+        tableBody += '<td>' + 同尾(s[i][1]) + '</td>';
+        tableBody += '<td>' + 連號(s[i][1]) + '</td>';
+        tableBody += '<td></td>'; 
+        tableBody += '</tr>';
+    }
+    document.getElementById('myData').innerHTML = tableBody;
+}
+
+// 執行渲染
+renderTable();
+
+</script>
+</body>
+</html>
