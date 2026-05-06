@@ -5,44 +5,92 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://88ll88.github.io/888/ddd.js"></script>
     <style>
-        /* 表格容器與基本樣式 */
-        #table-container {
-            width: 1200px;
-            margin: auto auto; 
+        body {
+                   background-color: #fff;
+                   margin: 0;
+                   padding: 0;
+                   display: flex;      /* 使用 Flexbox 確保內容垂直堆疊 */
+                   flex-direction: column;
+                   align-items: center; /* 強制所有子元素水平置中 */
         }
-
-        table {
-            border-collapse: collapse;
-            table-layout: fixed; /* 鎖定欄位寬度 */
-            width: 1200px;
-            background: #000;
-            color: white;
-            text-align: center;
-            font-size: 15px;
+        #table-container { 
+                   width: 1200px; 
+                   margin: 0 auto;
         }
-
-        /* 統一高度設定 */
-        tr {
-            height: 25px;
+        table { 
+                  border-collapse: collapse; 
+                  table-layout: fixed; 
+                  width: 1200px; 
+                  text-align: center; 
+                  font-size: 15px; 
+                  background: #e7e6e6
         }
-
-        td {
-            border: 0.5px solid white;
-            height: 25px;
-            line-height: 25px; /* 文字垂直置中 */
-            padding: 0;
-            box-sizing: border-box;
+        tr { 
+                  height: 25px; 
         }
-
-        /* 號碼區背景顏色分區 (可選) */
-        .bg-zone { width: 25px; }
-
-        /* 最後一欄空白補償 */
-        .empty-zone {
-            border: none;
-            background-color: transparent;
+        td { 
+                   border: 0.5px solid #444; 
+                   height: 25px; 
+                   padding: 0; 
+                   box-sizing: border-box; 
+                   line-height: 25px; 
         }
-    </style>
+        
+        /* 標題與基礎欄位 */
+        .header { background: #222; font-weight: bold; color:#fff;border: 0.5px solid #fff; }
+        .col-date {
+                   width: 100px; 
+                   border: 0.5px solid #fff;
+        }
+        .col-nums { 
+                   width: 100px; 
+                   border: 0.5px solid #fff;
+        }
+        .col-39 { 
+                   width: 25px; 
+                   border: 0.5px solid #fff;
+        } 
+        .col-idx { 
+                   width: 25px;  
+                   border: 0.5px solid #fff;
+        }
+        /* 規則 1：開獎號碼格的底色與紅圈 */
+       .win-cell-bg { background-color: #ceccc8; }
+    
+        /* 號碼視覺效果 */
+        .win-circle { 
+                   background-color: red; 
+                   color: white; 
+                   border-radius: 50%; 
+                   display: inline-block; 
+                   width: 20px; 
+                   height: 20px; 
+                   line-height: 20px; 
+                   font-weight: bold;
+        }
+        .missing-high {
+                   background-color: #ceccc8; 
+                   color: #000; 
+                   border: 1px solid white;   
+                   border-radius: 50%;
+                   display: inline-block; 
+                   width: 20px; 
+                   height: 20px; 
+                   line-height: 20px; 
+        }
+        win-bg { 
+                  background-color: #ceccc8; 
+                  color: #000; 
+                  font-weight: bold; 
+       }
+
+    /* 至今未開區間（第一格到開出前）的底色 */
+       .pending-bg { 
+                 background-color: #cfcdca; 
+                 color: #000; 
+       }
+
+        </style>
 </head>
 <body>
 <!-- 直接引入腳本，它會自動生成導航列並標記當前頁面 -->
@@ -53,27 +101,79 @@
 <!-- 表格區塊 -->
 <div id="table-container">
     <table>
-    <thead>
-        <tr>
-            <th style="width: 100px;">日期</th>
-            <th style="width: 100px;">開獎號碼</th>
-            <!-- JavaScript 自動產生 01-39 欄位 -->
-            <script>
-                var cells = '';
-                for (var i = 1; i <= 39; i++) {
-                    cells += '<td class="bg-zone">' + String(i).padStart(2, "0") + '</td>';
-                }
-                document.write(cells);
-            </script>
-            <td style="width: 25px;">#</td>
-
-        </tr>
+        <thead>
+            <tr class="header">
+                <td class="col-date">日期</td>
+                <td class="col-nums">開獎號碼</td>
+                <script>
+                    // 動態生成 01-39 標頭
+                    for(let i=1; i<=39; i++) document.write(`<td class="col-39">${String(i).padStart(2,'0')}</td>`);
+                </script>
+                <td class="col-idx">#</td>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
     </table>
 </div>
 <script>
+function renderCustomTable() {
+    const tbody = document.getElementById('table-body');
+    let html = '';
+    
+    // 找出顯示範圍 (直到 01-39 全出現)
+    let remaining = new Set();
+    for (let n = 1; n <= 39; n++) remaining.add(String(n).padStart(2, '0'));
+    let lastIndex = 0;
+    for (let i = 0; i < zzz.length; i++) {
+        zzz[i][1].forEach(num => remaining.delete(num));
+        lastIndex = i;
+        if (remaining.size === 0) break;
+    }
 
+    // 追蹤各號碼是否已經「開出過」
+    let hasAppeared = {};
+    for (let n = 1; n <= 39; n++) hasAppeared[String(n).padStart(2, '0')] = false;
 
+    for (let i = 0; i <= lastIndex; i++) {
+        let date = zzz[i][0];
+        let winningNums = zzz[i][1];
 
+        html += `<tr>`;
+        html += `<td>${date}</td>`;
+        html += `<td>${winningNums.join(",")}</td>`;
+
+        for (let n = 1; n <= 39; n++) {
+            let numStr = String(n).padStart(2, '0');
+            
+            // 計算遺漏值
+            let missingCount = 0;
+            for (let j = i; j < zzz.length; j++) {
+                if (zzz[j][1].includes(numStr)) break;
+                missingCount++;
+            }
+
+            if (winningNums.includes(numStr)) {
+                // 【開獎號碼】：底色 #ceccc8 + 紅圈
+                html += `<td><span class="win-circle">${numStr}</span></td>`;
+                hasAppeared[numStr] = true; 
+            } else {
+                // 【未開號碼】
+                if (!hasAppeared[numStr]) {
+                    // 至今未開區間：底色 #cfcdca，無圈
+                    html += `<td class="pending-bg">${missingCount}</td>`;
+                } else {
+                    // 歷史遺漏區：黑底，無圈
+                    html += `<td>${missingCount}</td>`;
+                }
+            }
+        }
+        html += `<td>${i + 1}</td>`;
+        html += `</tr>`;
+    }
+    tbody.innerHTML = html;
+}
+
+window.onload = renderCustomTable;
 </script>
 </body>
 </html>
