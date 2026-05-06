@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>539 數據分佈 - 連號與連莊分析</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://88ll88.github.io/888/ddd.js"></script>
+    <style>
+        body {
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+
+        /* 右上角按鈕區 */
+        .btn-group {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .btn-group button {
+            padding: 10px 10px;
+            background-color: #e31919;
+            color: white;
+            border: 1px solid #fff;
+            border-radius: 2px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 2px rgba(0,0,0,0.2);
+        }
+        .btn-group button.active {
+            background-color: #000; /* 啟動後變黑色 */
+        }
+
+        #table-container { width: 1200px; margin: 0px auto; }
+        
+        table { 
+            border-collapse: collapse; 
+            table-layout: fixed; 
+            width: 1200px; 
+            text-align: center; 
+            font-size: 15px;
+            background-color: #fff;
+        }
+        
+        tr { height: 25px; }
+        td { 
+            border: 0.5px solid #eee; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+
+        .header { background-color: #000; color: white; font-weight: bold; }
+        .date-cell { background-color: #f9f9f9; }
+
+        /* 紅圈基礎樣式 */
+        .num-circle-red {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 22px;
+            height: 22px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        /* --- 篩選模式控制 --- */
+        /* 連莊模式：隱藏非直連 */
+        .mode-vert .not-v-conn {
+            background-color: transparent !important;
+            color: #ccc !important;
+        }
+        /* 連號模式：隱藏非橫連 */
+        .mode-horz .not-h-conn {
+            background-color: transparent !important;
+            color: #ccc !important;
+        }
+    </style>
+</head>
+<body>
+<script src="nav.js"></script>
+<div class="btn-group">
+    <button id="btn-v" onclick="toggleMode('mode-vert', 'btn-v')">只看連莊</button>
+    <button id="btn-h" onclick="toggleMode('mode-horz', 'btn-h')">只看連號</button>
+</div>
+
+<div id="table-container">
+    <table>
+        <thead>
+            <tr class="header">
+                <td style="width: 100px">日期</td>
+                <td style="width: 100px">開獎號碼</td>
+                <script>
+                    for (var i = 1; i <= 39; i++) {
+                        document.write('<td style="width: 25px">' + String(i).padStart(2, "0") + '</td>');
+                    }
+                </script>
+                <td style="width: 25px">#</td>
+            </tr>
+        </thead>
+        <tbody id="data-body"></tbody>
+    </table>
+</div>
+
+<script>
+    function toggleMode(modeClass, btnId) {
+        const body = document.body;
+        const btn = document.getElementById(btnId);
+        
+        // 如果點擊已啟動的模式，則關閉它（恢復原始）
+        if (body.classList.contains(modeClass)) {
+            body.classList.remove(modeClass);
+            btn.classList.remove('active');
+        } else {
+            // 關閉所有模式，啟動當前模式
+            body.classList.remove('mode-vert', 'mode-horz');
+            document.getElementById('btn-v').classList.remove('active');
+            document.getElementById('btn-h').classList.remove('active');
+            
+            body.classList.add(modeClass);
+            btn.classList.add('active');
+        }
+    }
+
+    function renderTable() {
+        var tbody = document.getElementById('data-body');
+        var html = '';
+
+        if (typeof zzz !== 'undefined') {
+            var remaining = new Set();
+            for (var n = 1; n <= 39; n++) remaining.add(String(n).padStart(2, '0'));
+            var lastIndex = 0;
+            for (var i = 0; i < zzz.length; i++) {
+                zzz[i][1].forEach(num => remaining.delete(num));
+                lastIndex = i;
+                if (remaining.size === 0) break;
+            }
+
+            for (var j = 0; j <= lastIndex; j++) {
+                var row = zzz[j];
+                var aryNums = row[1];
+                var prevRowNums = (zzz[j - 1]) ? zzz[j - 1][1] : [];
+                var nextRowNums = (zzz[j + 1]) ? zzz[j + 1][1] : [];
+
+                html += '<tr>';
+                html += `<td class="date-cell">${row[0]}</td>`;
+                html += `<td class="date-cell">${aryNums.join(",")}</td>`;
+
+                for (var n = 1; n <= 39; n++) {
+                    var target = String(n).padStart(2, '0');
+                    var targetLeft = String(n - 1).padStart(2, '0');
+                    var targetRight = String(n + 1).padStart(2, '0');
+
+                    if (aryNums.includes(target)) {
+                        // 判斷連號 (橫連)
+                        var isHorz = aryNums.includes(targetLeft) || aryNums.includes(targetRight);
+                        // 判斷連莊 (直連)
+                        var isVert = prevRowNums.includes(target) || nextRowNums.includes(target);
+                        
+                        var connClasses = "";
+                        if (!isHorz) connClasses += " not-h-conn";
+                        if (!isVert) connClasses += " not-v-conn";
+
+                        html += `<td><span class="num-circle-red ${connClasses}">${target}</span></td>`;
+                    } else {
+                        html += `<td></td>`;
+                    }
+                }
+                html += `<td class="date-cell">${j + 1}</td>`;
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+    }
+
+    window.onload = renderTable;
+</script>
+
+</body>
+</html>
