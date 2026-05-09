@@ -5858,19 +5858,32 @@ var ddd=[
 ["2007-01-02(二)","33","02","37","12","36"],
 ["2007-01-01(一)","27","38","09","11","28"]
 ];
+// 1. 設定基準點
+var baseId = 115114; 
+var baseDateStr = "2026-05-09(六)";
 
-var baseId = 115104; 
-var baseDateStr = "2026-04-28(二)";
+// 2. 預先找出基準日期在 ddd 陣列中的索引位置 (只需執行一次)
+// 邏輯：基準點不論是 (六) 或 (日)，只要在陣列中存在即可
+var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
+
+// 3. 建立 zzz 數據
 var zzz = ddd.map((item, index) => {
     var dateStr = item[0];
-    var olds = item.slice(1, 6);
-    var news = olds.map(n => String(n).padStart(2, '0')).sort();
-    var originalOrder = olds.map(n => String(n).padStart(2, '0'));
-    var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
+    
+    // 取得號碼區塊 (假設 index 1~5 是號碼) 並補 0
+    var originalOrder = item.slice(1, 6).map(n => String(n).padStart(2, '0'));
+    
+    // 複製並排序，用於 [01-39] 區間的紅圈顯示
+    var news = [...originalOrder].sort();
+    
+    // 4. 計算期數 (currentId)
+    // 邏輯：只要 ddd 每一列代表一期，期數 = 基準期數 + (基準索引 - 目前索引)
     var currentId = 0;
-    if (pivotIndex !== -1){
+    if (pivotIndex !== -1) {
         currentId = baseId + (pivotIndex - index);
     }
+    
+    // 回傳格式：[日期, 排序號, 落球序, 期數]
     return [dateStr, news, originalOrder, currentId];
 });
 function TT(x){
