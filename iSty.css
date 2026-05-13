@@ -1,4 +1,4 @@
-        * { 
+      * { 
                     margin: 0; padding: 0; box-sizing: border-box; 
 }
         #wrapper-1200 {
@@ -9,7 +9,7 @@
                     background: transparent;
 }
         #nav-bar {
-        	        display: flex;      /* 沒這行，就會變整欄 */
+        	      display: flex;
                /* 導航寬高底 */
                     width: 100%;                    
                     height: 40px;
@@ -33,15 +33,15 @@
                     border-radius: 99999px; 
 }
         .n-btn.active {
-               	border:2px solid #fff;
+                   border:2px solid #fff;
                    background: red;
                    color: white;  
               /* Active */
-              /* overflow: auto;  設定 auto 才能手動縮放 */
-              /* resize: both;       設定可手動縮放.              */
-              /* margin: 0px;                                                  */             
+              /* overflow: auto;  
+              /* resize: both;      
+              /* margin: 0px;                                              
 }
-        #iDate {
+        .iDate {
                    width: 120px;
                    color: red;
 }
