@@ -1,0 +1,47 @@
+        * { 
+                    margin: 0; padding: 0; box-sizing: border-box; 
+}
+        #wrapper-1200 {
+                    width:1200px;
+                    height:600px;
+                    margin:0;
+                    padding:0;
+                    background: transparent;
+}
+        #nav-bar {
+        	        display: flex;      /* 沒這行，就會變整欄 */
+               /* 導航寬高底 */
+                    width: 100%;                    
+                    height: 40px;
+                    background:#000;
+                    align-items: center;                    
+    }
+        .n-btn {
+                    display:flex;
+                    align-items: center;
+                    justify-content: center;                    
+                    cursor: pointer;
+                    user-select: none;
+                    -webkit-user-select: none;
+               /* 必要按鈕 */
+                    font-size: 18px;
+                    font-weight: bold;
+                    width: 80px;
+                    height: 34px;         
+                    background:#000;
+                    color:#bfbfbf;
+                    border-radius: 99999px; 
+}
+        .n-btn.active {
+               	border:2px solid #fff;
+                   background: red;
+                   color: white;  
+              /* Active */
+              /* overflow: auto;  設定 auto 才能手動縮放 */
+              /* resize: both;       設定可手動縮放.              */
+              /* margin: 0px;                                                  */             
+}
+        #iDate {
+                   width: 120px;
+                   color: red;
+}
