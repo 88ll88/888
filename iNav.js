@@ -16,7 +16,7 @@
                 {name: "頭尾", url: "頭尾.html"},
                 {name: "双胞", url: "双胞.html"}
         ];
-        var html = '<class="iDate"></span>';
+        var html = '<span class="iDate"></span>';
         for (var i = 0; i < btns.length; i++) {
                 var item = btns[i];
                 var isCurrent = (oName === item.url) ? " active" : "";      
