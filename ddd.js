@@ -5892,6 +5892,16 @@ var zzz = ddd.map((item, index) => {
     // 回傳格式：[日期, 排序號, 落球序, 期數]
     return [dateStr, news, originalOrder, currentId];
 });
+var CLR=[
+[#"757171","#999999","#E6E6E6"], //黑
+[#"990000","#FF0000","#FFE5E5"], //紅
+[#"000080","#0000FF","#E5E5FF"], //藍
+[#"006600","#00CC00","#E5FFE5"], //綠
+[#"B36B00","#FF9900","#FFF5E5"], //橙
+[#"660066","#9900CC","#FFE5FF"], //紫
+[#"B300B0","#FF00FF","#FFF2FF"], //粉
+[#"999900","#FFFF00","#FFFFE5"]  //黃
+];
 function TT(x){
        var xz= Array(40).fill(0);
        ddd.slice(0, x).map(r =>r[1].map(n => xz[Number(n)]++));
