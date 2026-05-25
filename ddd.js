@@ -5913,16 +5913,59 @@ function TT(x){
        ddd.slice(0, x).map(r =>r[1].map(n => xz[Number(n)]++));
        return xz.slice(1,40);
 }
-var Lottery = (function(){
+// === 1. 你的 539 開獎業務日期邏輯 (原本的 Lottedy) ===
+var Lottedy = (function(){
     const now = new Date();
     
-    // 將時間往回推 1240 分鐘 (20小時40分鐘)
+    // 將時間往回推 1240 分鐘
     now.setMinutes(now.getMinutes() - 1240);
     
-    // 格式化成 YYYY-MM-DD
+    // 週日不開獎自動退回週六
+    if (now.getDay() === 0) {
+        now.setDate(now.getDate() - 1);
+    }
+    
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     
     return `${year}-${month}-${day}`;
+})();
+
+// === 2. 倒數計時功能 (自動載入，不影響其他程式) ===
+(function () {
+    // 確保平板畫面載入完成後才抓取標籤，防止報錯跑版
+    window.addEventListener('DOMContentLoaded', function() {
+        
+        // 先把上面的日期塞進畫面
+        const dateEl = document.getElementById('show-date');
+        if (dateEl) dateEl.textContent = Lottedy;
+        
+        // 啟動每秒倒數
+        setInterval(function() {
+            const now = new Date();
+            const target = new Date();
+            
+            // 精準鎖定每天晚上 20:35:00
+            target.setHours(20, 35, 0, 0);
+            
+            // 如果過了 20:35，自動切換成倒數明天的 20:35
+            if (now.getTime() >= target.getTime()) {
+                target.setDate(target.getDate() + 1);
+            }
+            
+            const diff = target.getTime() - now.getTime();
+            
+            // 換算時、分、秒
+            const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+            const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+            const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+            
+            // 安全渲染到畫面上
+            const timerEl = document.getElementById('countdown-timer');
+            if (timerEl) {
+                timerEl.textContent = `${hours}時 ${minutes}分 ${seconds}秒`;
+            }
+        }, 1000);
+    });
 })();
