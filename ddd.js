@@ -5964,7 +5964,7 @@ var Lottedy = (function(){
             // 安全渲染到畫面上
             const timerEl = document.getElementById('countdown-timer');
             if (timerEl) {
-                timerEl.textContent = `${hours}時 ${minutes}分 ${seconds}秒`;
+                timerEl.textContent = `${hours}${minutes}${seconds}`;
             }
         }, 1000);
     });
