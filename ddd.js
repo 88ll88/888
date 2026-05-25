@@ -5913,3 +5913,16 @@ function TT(x){
        ddd.slice(0, x).map(r =>r[1].map(n => xz[Number(n)]++));
        return xz.slice(1,40);
 }
+var Lottery = (function(){
+    const now = new Date();
+    
+    // 將時間往回推 1240 分鐘 (20小時40分鐘)
+    now.setMinutes(now.getMinutes() - 1240);
+    
+    // 格式化成 YYYY-MM-DD
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+})();
