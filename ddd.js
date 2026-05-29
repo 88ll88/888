@@ -5963,7 +5963,7 @@ var Lottedy = (function(){
         }, 40); // 提升每秒更新次數以流暢顯示毫秒
     });
 })();
-function X(n) {
+function iX(n) {
     n = (n===0||n===undefined)? zzz.length:n;
     var c = new Array(39).fill(0);
     for (var i = 0; i < n; i++) { zzz[i][1].forEach(s => {c[+s - 1]++; }); }
