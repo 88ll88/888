@@ -5983,3 +5983,111 @@ function iX(n) {
     for (var i = 0; i < n; i++) { zzz[i][1].forEach(s => {c[+s - 1]++; }); }
     return c;
 }
+
+// ==========================================================================
+// 539 全站通用模組：自動繪製頂部導航列 ＆ 底部總計列
+// ==========================================================================
+
+/**
+ * 1. 全自動畫頂部導航列
+ * @param {string} currentPageName - 當前頁面的功能名稱（例如："分佈"、"三分"、"拖牌"）
+ */
+function drawNav(currentPageName) {
+    // 動態塞入全站通用的 CSS 樣式，這樣各個 HTML 裡就不用寫一大堆 <style> 了！
+    var css = `
+    html, body { margin: 0; padding: 0; background-color: #000; }
+    .nav-center-wrapper { width: 100vw; display: flex !important; justify-content: center !important; background-color: #000; margin: 0; padding: 0; }
+    .nav-container { width: 1200px !important; height: 26px; border-bottom: 2px solid #333; background: linear-gradient(to right, #ff0000, #ff7700, #ffcc00, #ff7700, #ff0000); box-sizing: border-box; font-family: "Microsoft JhengHei", Arial, sans-serif; color: #fff; display: flex; align-items: center; justify-content: flex-start; overflow: hidden; }
+    .nav-date { width: 140px; height: 26px; line-height: 26px; font-size: 15px; font-weight: bold; white-space: nowrap; display: flex; align-items: center; justify-content: flex-start; padding-left: 12px; box-sizing: border-box; }
+    .nav-date .week-day { margin-left: 0.5em; }
+    .nav-btns { display: flex; height: 26px; align-items: center; }
+    .nav-btns a.bar { display: block; width: 45px; height: 22px; line-height: 22px; text-align: center; color: #fff; text-decoration: none; font-size: 14px; font-weight: bold; margin: 0 1px; background: #555; border-radius: 3px; }
+    .nav-btns a.bar.active { background: #9c27b0; }
+    .nav-countdown { width: 110px; height: 26px; line-height: 26px; font-size: 14px; font-weight: bold; color: #fff; text-align: center; font-family: monospace; margin-left: 5px; }
+    .nav-numbers { display: flex; align-items: center; gap: 4px; margin-left: 10px; }
+    .nav-numbers .ball { width: 20px; height: 20px; line-height: 20px; background: #ffeb3b; color: #000; border-radius: 50%; font-size: 13px; font-weight: bold; text-align: center; }
+    `;
+    var style = document.createElement('style');
+    style.innerHTML = css;
+    document.head.appendChild(style);
+
+    // 解析最新一期日期與星期
+    var rawDateStr = zzz[0][0]; 
+    var datePart = rawDateStr.substring(0, 10); 
+    var weekPart = rawDateStr.substring(10);    
+    var dateHtml = datePart + '<span class="week-day">' + weekPart + '</span>';
+
+    // 生成 9 個功能按鈕，並自動高亮當前頁面
+    var oAo = "分佈,三分,拖牌,遺漏,統計,連莊,連號,單双,頭尾".split(',');
+    var btnsHtml = '';
+    for(var i=0; i<oAo.length; i++){
+        var isActive = (oAo[i] === currentPageName) ? "bar active" : "bar";
+        btnsHtml += '<a href="' + oAo[i] + '.html" class="' + isActive + '">' + oAo[i] + '</a>';
+    }
+
+    // 最新一期開獎黃圈
+    var openNums = zzz[0][1]; 
+    var ballsHtml = '';
+    for(var j=0; j<5; j++) { ballsHtml += '<div class="ball">' + openNums[j] + '</div>'; }
+
+    // 組合置中導航列 HTML
+    var navHtml = '<div class="nav-center-wrapper">';
+    navHtml += '  <div class="nav-container">';
+    navHtml += '    <div class="nav-date">' + dateHtml + '</div>';           
+    navHtml += '    <div class="nav-btns">' + btnsHtml + '</div>';           
+    navHtml += '    <div class="nav-countdown" id="countdown">00:00:00.000</div>';
+    navHtml += '    <div class="nav-numbers">' + ballsHtml + '</div>';       
+    navHtml += '  </div>';
+    navHtml += '</div>';
+
+    // 塞入網頁最頂端
+    document.body.insertAdjacentHTML('afterbegin', navHtml);
+
+    // 啟動高精準倒數計時
+    function updateCountdown() {
+        var now = new Date();
+        var timerEl = document.getElementById('countdown');
+        if (!timerEl) return;
+        if (now.getDay() === 0) { timerEl.innerHTML = "00:00:00.000"; return; }
+        var t2040 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 40, 0, 0);
+        var targetTime = (now < t2040) ? t2040 : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 20, 40, 0, 0);
+        if (targetTime.getDay() === 0) { targetTime.setDate(targetTime.getDate() + 1); }
+        var diff = targetTime - now;
+        var hours = String(Math.floor(diff / 3600000)).padStart(2, '0');
+        var minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+        var seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        var mses = String(diff % 1000).padStart(3, '0');
+        timerEl.innerHTML = hours + ":" + minutes + ":" + seconds + "." + mses;
+    }
+    function runTimer() { updateCountdown(); requestAnimationFrame(runTimer); }
+    requestAnimationFrame(runTimer);
+}
+
+/**
+ * 2. 全自動畫底部總計列
+ * @param {number} currentN - 當前統計期數
+ */
+function drawTotalRows(currentN) {
+    var totalTfoot = document.getElementById("total-rows");
+    if (!totalTfoot) return; 
+
+    var currentCounts = iX(currentN);   
+    var historyCounts = iX(0);          
+    var totalHtml = '';
+    
+    // 當前 N 期統計 (黃字)
+    totalHtml += '<tr class="total-tr" style="color:#ffeb3b;">';
+    totalHtml += '  <td><div class="total-left"><span class="left-txt">第1期至第' + currentN + '期</span><span class="right-txt">共' + currentN + '期 次數</span></div></td>';
+    for (var m = 0; m < 39; m++) { totalHtml += '<td class="total-count-td">' + currentCounts[m] + '</td>'; }
+    totalHtml += '  <td></td>'; 
+    totalHtml += '</tr>';
+    
+    // 歷史總計 (綠字)
+    totalHtml += '<tr class="total-tr" style="color:#00ff00;">';
+    totalHtml += '  <td><div class="total-left"><span class="left-txt">第1期至第' + zzz.length + '期</span><span class="right-txt">共' + zzz.length + '期 次數</span></div></td>';
+    for (var m = 0; m < 39; m++) { totalHtml += '<td class="total-count-td">' + historyCounts[m] + '</td>'; }
+    totalHtml += '  <td></td>'; 
+    totalHtml += '</tr>';
+
+    totalTfoot.innerHTML = totalHtml;
+}
