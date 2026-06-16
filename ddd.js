@@ -1,4 +1,5 @@
 var ddd=[
+["2026-06-16(二)","29","25","05","23","17"],
 ["2026-06-15(一)","28","36","12","24","16"],
 ["2026-06-13(六)","34","06","05","36","04"],
 ["2026-06-12(五)","06","18","29","08","31"],
@@ -5892,29 +5893,15 @@ var ddd=[
 // 1. 設定基準點
 var baseId = 115114; 
 var baseDateStr = "2026-05-09(六)";
-
-// 2. 預先找出基準日期在 ddd 陣列中的索引位置 (只需執行一次)
-// 邏輯：基準點不論是 (六) 或 (日)，只要在陣列中存在即可
 var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
-
-// 3. 建立 zzz 數據
 var zzz = ddd.map((item, index) => {
     var dateStr = item[0];
-    
-    // 取得號碼區塊 (假設 index 1~5 是號碼) 並補 0
     var originalOrder = item.slice(1, 6).map(n => String(n).padStart(2, '0'));
-    
-    // 複製並排序，用於 [01-39] 區間的紅圈顯示
     var news = [...originalOrder].sort();
-    
-    // 4. 計算期數 (currentId)
-    // 邏輯：只要 ddd 每一列代表一期，期數 = 基準期數 + (基準索引 - 目前索引)
     var currentId = 0;
     if (pivotIndex !== -1) {
         currentId = baseId + (pivotIndex - index);
     }
-    
-    // 回傳格式：[日期, 排序號, 落球序, 期數]
     return [dateStr, news, originalOrder, currentId];
 });
 var CLR=[
