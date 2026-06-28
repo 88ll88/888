@@ -13,19 +13,19 @@ var zzz = ddd.map((item, index) => {
 });
 
 var DateStr = (function(){
-  return new Intl.DateTimeFormat('zh-TW', {
-    year: 'numeric', month: '2-digit', day: '2-digit'
-  }).format(new Date()).replace(/\//g, '-');
+  var d = new Date();
+  var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 })();
 
 var WeekStr = (function(){
-  // 'narrow' 會直接輸出 "一"、"二"、"日"
-  const w = new Intl.DateTimeFormat('zh-TW', { weekday: 'narrow' }).format(new Date());
-  return `(${w})`;
+  var weeks = ['日', '一', '二', '三', '四', '五', '六'];
+  var index = new Date().getDay(); // 取得 0 (日) 到 6 (六)
+  return '(' + weeks[index] + ')';
 })();
 
 var TimeStr = (function(){
-  return new Intl.DateTimeFormat('zh-TW', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
-  }).format(new Date());
+  var d = new Date();
+  var pad = function(n) { return (n < 10 ? '0' : '') + n; };
+  return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
 })();
