@@ -6020,3 +6020,4 @@ function drawTotalRows(currentN) {
     // 塞入表格底部
     totalTfoot.innerHTML = totalHtml;
 }
+var wwww=1;
