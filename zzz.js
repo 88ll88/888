@@ -29,3 +29,7 @@ var TimeStr = (function(){
   var pad = function(n) { return (n < 10 ? '0' : '') + n; };
   return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
 })();
+function toggleRow(rowElement) {
+            // 切換 .show-active 這個類名，有就移除，沒有就加上
+            rowElement.classList.toggle("show-active");
+}
