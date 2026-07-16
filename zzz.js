@@ -142,4 +142,8 @@ function toggleRow(rowElement) {
             }
         });
 
-
+        function toggleRowColor(rowElement) {
+            var activeRows = document.querySelectorAll('.active-row');
+            activeRows.forEach(r => { if (r !== rowElement) r.classList.remove('active-row'); });
+            rowElement.classList.toggle('active-row');
+        }
