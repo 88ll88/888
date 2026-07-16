@@ -147,7 +147,8 @@ function toggleRow(rowElement) {
             activeRows.forEach(r => { if (r !== rowElement) r.classList.remove('active-row'); });
             rowElement.classList.toggle('active-row');
         }
-var col=[
+function Color(i=0,j=0){    
+    var col=[
 ["#000000","#272727","#3C3C3C","#4F4F4F","#5B5B5B","#6C6C6C","#7B7B7B","#8E8E8E","#9D9D9D","#ADADAD","#BEBEBE","#D0D0D0","#E0E0E0","#F0F0F0","#FCFCFC","#FFFFFF"],
 ["#2F0000","#4D0000","#600000","#750000","#930000","#AE0000","#CE0000","#EA0000","#FF0000","#FF2D2D","#FF5151","#FF7575","#FF9797","#FFB5B5","#FFD2D2","#FFECEC"],
 ["#600030","#820041","#9F0050","#BF0060","#D9006C","#F00078","#FF0080","#FF359A","#FF60AF","#FF79BC","#FF95CA","#FFAAD5","#FFC1E0","#FFD9EC","#FFECF5","#FFF7FB"],
@@ -163,10 +164,11 @@ var col=[
 ["#5B4B00","#796400","#977C00","#AE8F00","#C6A300","#D9B300","#EAC100","#FFD306","#FFDC35","#FFE153","#FFE66F","#FFED97","#FFF0AC","#FFF4C1","#FFF8D7","#FFFCEC"],
 ["#844200","#9F5000","#BB5E00","#D26900","#EA7500","#FF8000","#FF9224","#FFA042","#FFAF60","#FFBB77","#FFC78E","#FFD1A4","#FFDCB9","#FFE4CA","#FFEEDD","#FFFAF4"],
 ["#642100","#842B00","#A23400","#BB3D00","#D94600","#F75000","#FF5809","#FF8040","#FF8F59","#FF9D6F","#FFAD86","#FFBD9D","#FFCBB3","#FFDAC8","#FFE6D9","#FFF3EE"],
-["#613030","#743A3A","#804040","#984B4B","#AD5A5A","#B87070","#C48888","#CF9E9E","#D9B3B3","#E1C4C4","#EBD6D6","#F2E6E6","              ","                  ","                  ","                 "],
+["#613030","#743A3A","#804040","#984B4B","#AD5A5A","#B87070","#C48888","#CF9E9E","#D9B3B3","#E1C4C4","#EBD6D6","#F2E6E6","","","",""],
 ["#616130","#707038","#808040","#949449","#A5A552","#AFAF61","#B9B973","#C2C287","#CDCD9A","#D6D6AD","#DEDEBE","#E8E8D0","","","",""],
 ["#336666","#3D7878","#408080","#4F9D9D","#5CADAD","#6FB7B7","#81C0C0","#95CACA","#A3D1D1","#B3D9D9","#C4E1E1","#D1E9E9","","","",""],
 ["#484891","#5151A2","#5A5AAD","#7373B9","#8080C0","#9999CC","#A6A6D2","#B8B8DC","#C7C7E2","#D8D8EB","#E6E6F2","#F3F3FA","","","",""],
 ["#6C3365","#7E3D76","#8F4586","#9F4D95","#AE57A4","#B766AD","#C07AB8","#CA8EC2","#D2A2CC","#DAB1D5","#E2C2DE","#EBD3E8","","","",""]
 ];
-
+return col[i][j];
+}
