@@ -148,7 +148,7 @@ function toggleRow(rowElement) {
             rowElement.classList.toggle('active-row');
         }
 
-   var Colors={
+var Colors={
 0:["#3C3C3C","#6C6C6C","#ADADAD","#E0E0E0"],
 1:["#AE0000","#0000C6","#707038","007500","#750075","#007979","#977C00","#6F00D2","#BB5E00","#64A600"],
 2:["#FF0000","#2828FF","#A5A552","#00BB00","#D200D2","#00AEAE","#EAC100","#B15BFF","#FF8000","#8CEA00"],
