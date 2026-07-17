@@ -148,7 +148,7 @@ function toggleRow(rowElement) {
             rowElement.classList.toggle('active-row');
         }
 
-    var color=[
+    var ccc = [
 ["#000000","#272727","#3C3C3C","#4F4F4F","#5B5B5B","#6C6C6C","#7B7B7B","#8E8E8E","#9D9D9D","#ADADAD","#BEBEBE","#D0D0D0","#E0E0E0","#F0F0F0","#FCFCFC","#FFFFFF"],
 ["#2F0000","#4D0000","#600000","#750000","#930000","#AE0000","#CE0000","#EA0000","#FF0000","#FF2D2D","#FF5151","#FF7575","#FF9797","#FFB5B5","#FFD2D2","#FFECEC"],
 ["#600030","#820041","#9F0050","#BF0060","#D9006C","#F00078","#FF0080","#FF359A","#FF60AF","#FF79BC","#FF95CA","#FFAAD5","#FFC1E0","#FFD9EC","#FFECF5","#FFF7FB"],
