@@ -147,7 +147,7 @@ function toggleRow(rowElement) {
             activeRows.forEach(r => { if (r !== rowElement) r.classList.remove('active-row'); });
             rowElement.classList.toggle('active-row');
         }
-function Color(i=0,j=0){    
+
     var col=[
 ["#000000","#272727","#3C3C3C","#4F4F4F","#5B5B5B","#6C6C6C","#7B7B7B","#8E8E8E","#9D9D9D","#ADADAD","#BEBEBE","#D0D0D0","#E0E0E0","#F0F0F0","#FCFCFC","#FFFFFF"],
 ["#2F0000","#4D0000","#600000","#750000","#930000","#AE0000","#CE0000","#EA0000","#FF0000","#FF2D2D","#FF5151","#FF7575","#FF9797","#FFB5B5","#FFD2D2","#FFECEC"],
@@ -170,5 +170,4 @@ function Color(i=0,j=0){
 ["#484891","#5151A2","#5A5AAD","#7373B9","#8080C0","#9999CC","#A6A6D2","#B8B8DC","#C7C7E2","#D8D8EB","#E6E6F2","#F3F3FA","","","",""],
 ["#6C3365","#7E3D76","#8F4586","#9F4D95","#AE57A4","#B766AD","#C07AB8","#CA8EC2","#D2A2CC","#DAB1D5","#E2C2DE","#EBD3E8","","","",""]
 ];
-return col[i][j];
-}
+
