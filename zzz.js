@@ -170,4 +170,3 @@ function toggleRow(rowElement) {
 ["#484891","#5151A2","#5A5AAD","#7373B9","#8080C0","#9999CC","#A6A6D2","#B8B8DC","#C7C7E2","#D8D8EB","#E6E6F2","#F3F3FA","","","",""],
 ["#6C3365","#7E3D76","#8F4586","#9F4D95","#AE57A4","#B766AD","#C07AB8","#CA8EC2","#D2A2CC","#DAB1D5","#E2C2DE","#EBD3E8","","","",""]
 ];
-console.log(color[0]);
