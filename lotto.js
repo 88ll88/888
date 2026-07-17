@@ -1,4 +1,4 @@
-var Colors = (function() ={
+
   var obj={
 0:["#3C3C3C","#6C6C6C","#ADADAD","#E0E0E0"],
 1:["#AE0000","#0000C6","#707038","007500","#750075","#007979","#977C00","#6F00D2","#BB5E00","#64A600"],
@@ -6,5 +6,3 @@ var Colors = (function() ={
 3:["#FF7575","#9393FF","#CDCD9A","#93FF93","#FF77FF","#4DFFFF","#FFE66F","#D3A4FF","#FFAF60","#C2FF68"],
 4:["#FFD2D2","#DDDDFF","#E8E8D0","#CEFFCE","#FFD0FF","#CAFFFF","#FFF4C1","#F1E1FF","#FFE4CA","#E8FFC4"]
 }; 
-  return obj;
-})();
