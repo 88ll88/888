@@ -69,7 +69,7 @@
         for (var i = 1; i <= 8; i++) {
             // 如果按鈕編號等於目前頁面編號，就加上 active 亮起
             var activeClass = (i === currentNum) ? ' active' : '';
-            html += `<div class="capsule-btn${activeClass}" onclick="goToPage(${i})">三分區</div>`;
+            html += `<div class="capsule-btn${activeClass}" onclick="goToPage(${i})">出現次數</div>`;
         }
         sidebar.innerHTML = html;
         document.body.appendChild(sidebar);
