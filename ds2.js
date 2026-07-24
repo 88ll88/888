@@ -1,5 +1,5 @@
-/* ===================================================
- * ds.js - 微型日曆與區間搜尋工具 (整合期數與日期搜尋)
+/* ===/* ===================================================
+ * ds.js - 微型日曆與單一期數搜尋工具
  * =================================================== */
 
 (function() {
@@ -15,9 +15,9 @@
         // 注入微型 CSS 樣式
         var style = document.createElement('style');
         style.innerHTML = `
-            .ds-panel { width:1175px; margin:10px 0; padding:4px 8px; background:#f8f9fa; border:1px solid #ccc; box-sizing:border-box; display:flex; align-items:center; justify-content:flex-start; gap:8px; font-size:12px; font-weight:bold; position:relative; text-align:left; }
+            .ds-panel { width:1175px; margin:10px 0; padding:4px 8px; background:#f8f9fa; border:1px solid #ccc; box-sizing:border-box; display:flex; align-items:center; justify-content:flex-start; gap:6px; font-size:12px; font-weight:bold; position:relative; text-align:left; }
             .ds-input { width:95px; height:20px; text-align:center; font-weight:bold; font-size:12px; border:1px solid #999; background:#fff; cursor:pointer; }
-            .ds-p-input { width:50px; height:20px; text-align:center; font-weight:bold; font-size:12px; border:1px solid #999; background:#fff; }
+            .ds-p-input { width:55px; height:20px; text-align:center; font-weight:bold; font-size:12px; border:1px solid #999; background:#fff; }
             .ds-btn { height:22px; padding:0 8px; background:#222; color:#fff; border:none; border-radius:2px; font-size:12px; font-weight:bold; cursor:pointer; }
             
             /* 📅 超小巧微型日曆 (寬度僅 180px) */
@@ -33,34 +33,32 @@
         `;
         document.head.appendChild(style);
 
-        // 建立單一控制列 HTML (全部放在同一排)
+        // 建立單一控制列 HTML
         var bar = document.createElement("div");
         bar.className = "ds-panel";
         bar.innerHTML = `
-            <!-- 1. 最左邊：30, 60, 100 快速切換 -->
-            <span>
+            <!-- 1. 最左邊：單一期數填寫框 + 搜尋按鈕 -->
+            <span>期數：</span>
+            [ <input type="text" id="start_p" class="ds-p-input" value="30"> ]
+            <button class="ds-btn" onclick="searchData()">搜尋</button>
+
+            <!-- 2. 快捷切換按鈕 30, 60, 100, 200, 500 -->
+            <span style="margin-left: 4px;">
                 [ <a href="javascript:void(0)" onclick="setPeriod(30)">30</a> ] 
                 [ <a href="javascript:void(0)" onclick="setPeriod(60)">60</a> ] 
-                [ <a href="javascript:void(0)" onclick="setPeriod(100)">100</a> ]
+                [ <a href="javascript:void(0)" onclick="setPeriod(100)">100</a> ] 
+                [ <a href="javascript:void(0)" onclick="setPeriod(200)">200</a> ] 
+                [ <a href="javascript:void(0)" onclick="setPeriod(500)">500</a> ]
             </span>
             
-            <span>│</span>
+            <span style="margin: 0 4px;">│</span>
 
-            <!-- 2. 期數輸入框與搜尋 -->
-            <span>期數：</span>
-            [ <input type="text" id="start_p" class="ds-p-input"> ]
-            <span>~</span>
-            [ <input type="text" id="end_p" class="ds-p-input"> ]
-            <button class="ds-btn" onclick="searchData()">搜尋期數</button>
-
-            <span>│</span>
-
-            <!-- 3. 日期區間與日曆 -->
+            <!-- 3. 日期區間搜尋與日曆 -->
             <span>區間：</span>
             <input type="text" id="ds_start" class="ds-input" value="${dStart}" readonly onclick="dsOpenPicker(this)">
             <span>至</span>
             <input type="text" id="ds_end" class="ds-input" value="${dEnd}" readonly onclick="dsOpenPicker(this)">
-            <button class="ds-btn" onclick="dsSearch()">搜尋日期</button>
+            <button class="ds-btn" onclick="dsSearch()">搜尋區間</button>
 
             <!-- 微型彈出日曆 -->
             <div id="dsPicker" class="ds-picker">
@@ -162,7 +160,7 @@ function getZzzByRange(box1Date, box2Date) {
     });
 }
 
-// 日期搜尋執行
+// 日期區間搜尋
 function dsSearch() {
     var v1 = document.getElementById('ds_start').value;
     var v2 = document.getElementById('ds_end').value;
