@@ -1,110 +1,115 @@
-/* ===================================================
- * right_nav.js - 自動生成右側欄選單 (8個頁面自動跳轉)
- * =================================================== */
-
 (function() {
-    // 8 個按鈕對應的文字與檔名
-    var menuData = [
-        { name: "三分", file: 三分.html" },
-        { name: "分佈", file: "分佈.html" },
-        { name: "拖牌", file: "3.html" },
-        { name: "遺漏", file: "4.html" },
-        { name: "統計", file: "5.html" },
-        { name: "連莊", file: "6.html" },
-        { name: "連號", file: "7.html" },
-        { name: "尾號", file: "8.html" }
-    ];
-
-    function initRightSidebar() {
-        // 1. 動態注入 CSS 樣式
-        if (!document.getElementById('glass-nav-sidebar-style')) {
-            var style = document.createElement('style');
-            style.id = 'glass-nav-sidebar-style';
-            style.innerHTML = `
-                .glass-nav-sidebar {
-                    position: fixed !important;
-                    right: 5px !important;
-                    top: 50px !important;
-                    width: 25px !important;
-                    height: 600px !important;
-                    display: flex !important;
-                    flex-direction: column !important;
-                    justify-content: space-between !important; /* 首尾貼邊，中間均分 */
-                    align-items: center !important;
-                    z-index: 9999 !important;
-                    user-select: none !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    background: transparent !important;
-                }
-
-                .glass-nav-sidebar .glass-nav__item {
-                    width: 25px !important;
-                    height: 70px !important;
-                    line-height: normal !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    
-                    writing-mode: vertical-lr !important;
-                    letter-spacing: 0px !important;
-                    font-size: 11px !important;
-                    font-weight: bold !important;
-                    
-                    /* 未選中時透明無框 */
-                    background-color: transparent !important;
-                    border: none !important;
-                    border-radius: 0 !important;
-                    color: #888888 !important;
-                    
-                    cursor: pointer !important;
-                    box-sizing: border-box !important;
-                    transition: all 0.2s ease !important;
-                }
-
-                .glass-nav-sidebar .glass-nav__item:hover {
-                    color: #ffffff !important;
-                }
-
-                /* 點擊/當前頁面：白灰膠囊框 */
-                .glass-nav-sidebar .glass-nav__item--active {
-                    background-color: #e0e0e0 !important;
-                    color: #000000 !important;
-                    border-radius: 10em !important;
-                    border: 0.5px solid #fff !important;
-                    font-weight: bold !important;
-                }
-            `;
-            document.head.appendChild(style);
+    // 1. 自動注入 CSS 樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        /* 右側欄固定定位容器：高 600px */
+        .glass-nav-sidebar {
+            position: fixed;
+            right: 10px;
+            top: 2px;
+            width: 40px;
+            height: 600px;
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between !important; 
+            align-items: center;
+            
+            z-index: 9999;
+            user-select: none;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
-        // 2. 自動判斷當前是第幾頁 (例如網址是 1.html)
-        var path = window.location.pathname;
-        var currentPage = path.split("/").pop() || "1.html"; // 預設 1.html
+        /* 項目尺寸 (22px × 70px) */
+        .glass-nav-sidebar .glass-nav__item {
+            width: 40px !important;
+            height: 70px !important;
+            line-height: normal !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* 直書排版 */
+            writing-mode: vertical-lr;
+            letter-spacing: 0px;
+            font-size: 16px;
+            font-weight: bold;
+            
+            /* 未選中時無膠囊框 */
+            background-color: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            color: #ffffff;
+            
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
 
-        // 3. 自動建立外層 <nav> 容器
-        if (!document.getElementById('autoRightNav')) {
-            var nav = document.createElement("nav");
-            nav.id = "autoRightNav";
-            nav.className = "glass glass-nav glass-nav-sidebar";
+        /* Hover 懸停效果 */
+        .glass-nav-sidebar .glass-nav__item:hover {
+            color: #ffffff;
+        }
 
-            // 4. 用迴圈生出 8 個按鈕，自動比對亮起與點擊跳轉
-            var html = '';
-            menuData.forEach(function(item) {
-                var isActive = (currentPage === item.file) ? ' glass-nav__item--active' : '';
-                html += `<span class="glass-nav__item${isActive}" tabindex="0" onclick="window.location.href='${item.file}'">${item.name}</span>`;
+        /* Active（選中）膠囊框 */
+        .glass-nav-sidebar .glass-nav__item--active {
+            background-color: #e0e0e0 !important;
+            color: #000000 !important;
+            border-radius: 20em !important;
+            border: 0.5px solid #e6e6e6 !important;
+            font-weight: bold;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 2. 選項資料設定
+    const navItems = ["走勢", "三分", "拖牌", "遺漏", "統計", "連莊", "連號", "尾號"];
+
+    // 3. 建立 DOM 元素
+    const navContainer = document.createElement('nav');
+    navContainer.className = 'glass glass-nav glass-nav-sidebar';
+
+    navItems.forEach((text, index) => {
+        const item = document.createElement('span');
+        item.className = 'glass-nav__item' + (index === 0 ? ' glass-nav__item--active' : '');
+        item.setAttribute('tabindex', '0');
+        item.innerText = text;
+
+        // 綁定點擊切換事件
+        item.addEventListener('click', function() {
+            // 移除其他項目的 active
+            navContainer.querySelectorAll('.glass-nav__item').forEach(el => {
+                el.classList.remove('glass-nav__item--active');
             });
 
-            nav.innerHTML = html;
-            document.body.appendChild(nav);
-        }
+            // 加上 active
+            this.classList.add('glass-nav__item--active');
+
+            // 觸發自訂切換邏輯 (可在此擴充你的功能)
+            onNavChange(text);
+        });
+
+        navContainer.appendChild(item);
+    });
+
+    // 4. 當 DOM 載入完成後自動掛載到 body
+    if (document.body) {
+        document.body.appendChild(navContainer);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.appendChild(navContainer);
+        });
     }
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initRightSidebar);
-    } else {
-        initRightSidebar();
+    // 5. 切換分頁時的事件處理函式
+    function onNavChange(tabName) {
+        console.log("切換到分頁：", tabName);
+        
+        // 💡 可以在這裡根據 tabName 執行相應的動作，例如：
+        // if (tabName === "遺漏") { loadOmissionPage(); }
     }
 })();
