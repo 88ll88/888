@@ -5,9 +5,9 @@
         /* 右側欄固定定位容器：高 600px */
         .glass-nav-sidebar {
             position: fixed;
-            right: 10px;
+            right: 0px;
             top: 2px;
-            width: 40px;
+            width: 25px;
             height: 600px;
             
             display: flex;
@@ -23,7 +23,7 @@
 
         /* 項目尺寸 (22px × 70px) */
         .glass-nav-sidebar .glass-nav__item {
-            width: 40px !important;
+            width: 25px !important;
             height: 70px !important;
             line-height: normal !important;
             margin: 0 !important;
@@ -41,9 +41,9 @@
             
             /* 未選中時無膠囊框 */
             background-color: transparent !important;
-            border: none !important;
+            border:0.5px solid #ccc!important;
             border-radius: 0 !important;
-            color: #ffffff;
+            color: #ccc;
             
             cursor: pointer;
             box-sizing: border-box;
@@ -52,7 +52,7 @@
 
         /* Hover 懸停效果 */
         .glass-nav-sidebar .glass-nav__item:hover {
-            color: #ffffff;
+            color: #ccc;
         }
 
         /* Active（選中）膠囊框 */
