@@ -5,7 +5,7 @@
 (function() {
     // 8 個按鈕對應的文字與檔名
     var menuData = [
-        { name: "pppp", file: pppp.html" },
+        { name: "三分", file: 三分.html" },
         { name: "分佈", file: "分佈.html" },
         { name: "拖牌", file: "3.html" },
         { name: "遺漏", file: "4.html" },
