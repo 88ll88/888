@@ -1,110 +1,76 @@
 /* ===================================================
- * ds.js - 微型日曆與單一期數搜尋工具
+ * ds.js - 微型日曆與區間搜尋工具 (預設日期 + 秒速自動搜尋版)
  * =================================================== */
 
-(function() {
-    document.addEventListener("DOMContentLoaded", function() {
-        // 預設日期（自動抓 zzz 第一筆與第30筆）
-        var dStart = "2026-07-02", dEnd = "2025-01-01";
-        if (typeof zzz !== 'undefined' && zzz.length > 0) {
-            dStart = String(zzz[0][0]).replace(/\(.\)/g, '').trim();
-            var lastIdx = Math.min(29, zzz.length - 1);
-            dEnd = String(zzz[lastIdx][0]).replace(/\(.\)/g, '').trim();
-        }
-
-        // 注入微型 CSS 樣式
-        var style = document.createElement('style');
-        style.innerHTML = `
-            .ds-panel { width:1175px; margin:10px 0; padding:4px 8px; background:#f8f9fa; border:1px solid #ccc; box-sizing:border-box; display:flex; align-items:center; justify-content:flex-start; gap:6px; font-size:12px; font-weight:bold; position:relative; text-align:left; }
-            .ds-input { width:95px; height:20px; text-align:center; font-weight:bold; font-size:12px; border:1px solid #999; background:#fff; cursor:pointer; }
-            .ds-p-input { width:55px; height:20px; text-align:center; font-weight:bold; font-size:12px; border:1px solid #999; background:#fff; }
-            .ds-btn { height:22px; padding:0 8px; background:#222; color:#fff; border:none; border-radius:2px; font-size:12px; font-weight:bold; cursor:pointer; }
-            
-            /* 📅 超小巧微型日曆 (寬度僅 180px) */
-            .ds-picker { position:absolute; background:#fff; border:1px solid #999; box-shadow:2px 2px 8px rgba(0,0,0,0.2); padding:6px; z-index:9999; display:none; width:180px; box-sizing:border-box; border-radius:3px; }
-            .ds-picker-head { display:flex; justify-content:space-between; margin-bottom:4px; }
-            .ds-picker-head select { font-size:11px; padding:1px; font-weight:bold; }
-            .ds-weekdays { display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-size:10px; font-weight:bold; color:#666; margin-bottom:2px; }
-            .ds-days-grid { display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; }
-            .ds-cell { height:18px; background:#fff; border:1px solid #eee; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:2px; }
-            .ds-cell:hover:not(.disabled) { background:#eee; }
-            .ds-cell.selected { background:#007bff !important; color:#fff !important; }
-            .ds-cell.disabled { background:#f0f0f0 !important; color:#ccc !important; cursor:not-allowed !important; }
-        `;
-        document.head.appendChild(style);
-
-        // 建立單一控制列 HTML
-        var bar = document.createElement("div");
-        bar.className = "ds-panel";
-        bar.innerHTML = `
-            <!-- 1. 最左邊：單一期數填寫框 + 搜尋按鈕 -->
-            <span>期數：</span>
-            [ <input type="text" id="start_p" class="ds-p-input" value="30"> ]
-            <button class="ds-btn" onclick="searchData()">搜尋</button>
-
-            <!-- 2. 快捷切換按鈕 30, 60, 100, 200, 500 -->
-            <span style="margin-left: 4px;">
-                [ <a href="javascript:void(0)" onclick="setPeriod(30)">30</a> ] 
-                [ <a href="javascript:void(0)" onclick="setPeriod(60)">60</a> ] 
-                [ <a href="javascript:void(0)" onclick="setPeriod(100)">100</a> ] 
-                [ <a href="javascript:void(0)" onclick="setPeriod(200)">200</a> ] 
-                [ <a href="javascript:void(0)" onclick="setPeriod(500)">500</a> ]
-            </span>
-            
-            <span style="margin: 0 4px;">│</span>
-
-            <!-- 3. 日期區間搜尋與日曆 -->
-            <span>區間：</span>
-            <input type="text" id="ds_start" class="ds-input" value="${dStart}" readonly onclick="dsOpenPicker(this)">
-            <span>至</span>
-            <input type="text" id="ds_end" class="ds-input" value="${dEnd}" readonly onclick="dsOpenPicker(this)">
-            <button class="ds-btn" onclick="dsSearch()">搜尋區間</button>
-
-            <!-- 微型彈出日曆 -->
-            <div id="dsPicker" class="ds-picker">
-                <div class="ds-picker-head">
-                    <select id="dsYear" onchange="dsRenderDays()"></select>
-                    <select id="dsMonth" onchange="dsRenderDays()"></select>
-                </div>
-                <div class="ds-weekdays"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
-                <div id="dsGrid" class="ds-days-grid"></div>
-            </div>
-        `;
-        document.body.appendChild(bar);
-
-        // 初始化年份和月份選單
-        var ySel = document.getElementById("dsYear");
-        var mSel = document.getElementById("dsMonth");
+// 1. 初始化年份與月份下拉選單，並設定預設日期 (左:今天 / 右:100天前)
+function dsInitYearMonth() {
+    var ySel = document.getElementById("dsYear");
+    var mSel = document.getElementById("dsMonth");
+    if (ySel && mSel && ySel.options.length === 0) {
         for (var y = 2007; y <= 2026; y++) ySel.innerHTML += `<option value="${y}">${y}年</option>`;
         for (var m = 1; m <= 12; m++) mSel.innerHTML += `<option value="${String(m).padStart(2,'0')}">${m}月</option>`;
-    });
-})();
+    }
 
-// 微型日曆邏輯
+    // 💡 設定預設日期：左邊今天、右邊100天前
+    var startInput = document.getElementById('ds_start');
+    var endInput = document.getElementById('ds_end');
+
+    if (startInput && endInput && (!startInput.value || !endInput.value)) {
+        var today = new Date();
+        var pastDay = new Date();
+        pastDay.setDate(today.getDate() - 100); // 往前推 100 天
+
+        var formatDate = function(d) {
+            var yyyy = d.getFullYear();
+            var mm = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            return yyyy + '-' + mm + '-' + dd;
+        };
+
+        startInput.value = formatDate(today);   // 左邊：今天
+        endInput.value = formatDate(pastDay);   // 右邊：100天前
+    }
+}
+
+// 頁面載入完成後初始化
+document.addEventListener("DOMContentLoaded", function() {
+    dsInitYearMonth();
+});
+
+// 2. 微型日曆開啟與繪製邏輯
 var dsActiveInput = null;
 
 function dsOpenPicker(inputEl) {
+    dsInitYearMonth(); // 確保選單與預設值已載入
     dsActiveInput = inputEl;
     var picker = document.getElementById("dsPicker");
+    if (!picker) return;
     
+    // 計算彈出日曆的位置，貼在當前輸入框的正上方
     picker.style.left = inputEl.offsetLeft + "px";
-    picker.style.top = (inputEl.offsetTop - 170) + "px";
     picker.style.display = "block";
 
     var parts = inputEl.value.split("-");
     if (parts.length === 3) {
-        document.getElementById("dsYear").value = parts[0];
-        document.getElementById("dsMonth").value = parts[1];
+        var yEl = document.getElementById("dsYear");
+        var mEl = document.getElementById("dsMonth");
+        if (yEl) yEl.value = parts[0];
+        if (mEl) mEl.value = parts[1];
     }
     dsRenderDays();
 }
 
 function dsRenderDays() {
-    var year = document.getElementById("dsYear").value;
-    var month = document.getElementById("dsMonth").value;
+    var yearEl = document.getElementById("dsYear");
+    var monthEl = document.getElementById("dsMonth");
     var grid = document.getElementById("dsGrid");
+    if (!yearEl || !monthEl || !grid) return;
+    
+    var year = yearEl.value;
+    var month = monthEl.value;
     grid.innerHTML = "";
 
+    // 整理開獎歷史日期 Set
     var drawnDates = new Set();
     if (typeof zzz !== 'undefined') {
         zzz.forEach(function(item) { 
@@ -115,6 +81,7 @@ function dsRenderDays() {
     var firstDay = new Date(parseInt(year), parseInt(month) - 1, 1).getDay();
     var totalDays = new Date(parseInt(year), parseInt(month), 0).getDate();
 
+    // 補齊月首空白格
     for (var i = 0; i < firstDay; i++) {
         grid.appendChild(document.createElement("div"));
     }
@@ -129,13 +96,16 @@ function dsRenderDays() {
         cell.innerText = dStr;
 
         if (!drawnDates.has(fullDate)) {
-            cell.classList.add("disabled");
+            cell.classList.add("disabled"); // 未開獎的日期變灰格
         } else {
             if (fullDate === curVal) cell.classList.add("selected");
+            
+            // 🎯 只要點擊日期，立刻更新輸入框、關閉日曆，並直接觸發搜尋！
             cell.onclick = (function(val) {
                 return function() {
-                    dsActiveInput.value = val;
+                    if (dsActiveInput) dsActiveInput.value = val;
                     document.getElementById("dsPicker").style.display = "none";
+                    dsSearch(); // 點擊即搜尋！
                 };
             })(fullDate);
         }
@@ -143,7 +113,7 @@ function dsRenderDays() {
     }
 }
 
-// 核心去括號比對邏輯
+// 3. 核心去括號比對邏輯
 function getZzzByRange(box1Date, box2Date) {
     if (typeof zzz === 'undefined' || !zzz.length) return [];
     
@@ -160,15 +130,17 @@ function getZzzByRange(box1Date, box2Date) {
     });
 }
 
-// 日期區間搜尋
+// 4. 點擊日期自動執行的區間搜尋動作
 function dsSearch() {
     var v1 = document.getElementById('ds_start').value;
     var v2 = document.getElementById('ds_end').value;
+
     var filtered = getZzzByRange(v1, v2);
 
     if (filtered.length > 0 && typeof renderAll === 'function') {
-        currentData = filtered;
-        renderAll(currentData);
+        renderAll(filtered);
+    } else {
+        alert("找不到此區間內的開獎紀錄！");
     }
 }
 
@@ -176,7 +148,9 @@ function dsSearch() {
 document.addEventListener("click", function(e) {
     var picker = document.getElementById("dsPicker");
     if (picker && picker.style.display === "block") {
-        if (!picker.contains(e.target) && e.target !== document.getElementById("ds_start") && e.target !== document.getElementById("ds_end")) {
+        var startInput = document.getElementById("ds_start");
+        var endInput = document.getElementById("ds_end");
+        if (!picker.contains(e.target) && e.target !== startInput && e.target !== endInput) {
             picker.style.display = "none";
         }
     }
