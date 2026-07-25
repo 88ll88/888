@@ -1,24 +1,28 @@
-/* ===================================================
- * ds.js - 微型日曆與區間搜尋工具 (預設日期 + 秒速自動搜尋版)
+/* ===/* ===================================================
+ * ds.js - 微型日曆與區間搜尋工具 (靠右對齊 + 切換月預設1號版)
  * =================================================== */
 
-// 1. 初始化年份與月份下拉選單，並設定預設日期 (左:今天 / 右:100天前)
+// 1. 初始化年份與月份下拉選單，並設定初始預設日期
 function dsInitYearMonth() {
     var ySel = document.getElementById("dsYear");
     var mSel = document.getElementById("dsMonth");
     if (ySel && mSel && ySel.options.length === 0) {
         for (var y = 2007; y <= 2026; y++) ySel.innerHTML += `<option value="${y}">${y}年</option>`;
         for (var m = 1; m <= 12; m++) mSel.innerHTML += `<option value="${String(m).padStart(2,'0')}">${m}月</option>`;
+        
+        // 💡 年月選單切換時，自動設定為 1 號並秒觸發搜尋！
+        ySel.onchange = dsOnYearMonthChange;
+        mSel.onchange = dsOnYearMonthChange;
     }
 
-    // 💡 設定預設日期：左邊今天、右邊100天前
+    // 設定初始預設日期：左邊今天、右邊100天前
     var startInput = document.getElementById('ds_start');
     var endInput = document.getElementById('ds_end');
 
     if (startInput && endInput && (!startInput.value || !endInput.value)) {
         var today = new Date();
         var pastDay = new Date();
-        pastDay.setDate(today.getDate() - 100); // 往前推 100 天
+        pastDay.setDate(today.getDate() - 100);
 
         var formatDate = function(d) {
             var yyyy = d.getFullYear();
@@ -27,12 +31,24 @@ function dsInitYearMonth() {
             return yyyy + '-' + mm + '-' + dd;
         };
 
-        startInput.value = formatDate(today);   // 左邊：今天
-        endInput.value = formatDate(pastDay);   // 右邊：100天前
+        startInput.value = formatDate(today);
+        endInput.value = formatDate(pastDay);
     }
 }
 
-// 頁面載入完成後初始化
+// 💡 下拉選單（切換年月）時的處理：自動抓 1 號 + 搜尋
+function dsOnYearMonthChange() {
+    var yearEl = document.getElementById("dsYear");
+    var monthEl = document.getElementById("dsMonth");
+    if (!yearEl || !monthEl || !dsActiveInput) return;
+
+    var newDate = yearEl.value + '-' + monthEl.value + '-01';
+    dsActiveInput.value = newDate; // 預設帶入 1 號
+    
+    dsRenderDays(); // 重新繪製日曆
+    dsSearch();     // 秒觸發搜尋！
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     dsInitYearMonth();
 });
@@ -41,14 +57,20 @@ document.addEventListener("DOMContentLoaded", function() {
 var dsActiveInput = null;
 
 function dsOpenPicker(inputEl) {
-    dsInitYearMonth(); // 確保選單與預設值已載入
+    dsInitYearMonth();
     dsActiveInput = inputEl;
     var picker = document.getElementById("dsPicker");
     if (!picker) return;
     
-    // 計算彈出日曆的位置，貼在當前輸入框的正上方
-    picker.style.left = inputEl.offsetLeft + "px";
     picker.style.display = "block";
+    
+    // 💡 關鍵：改為靠右對齊！計算右邊界線，確保日曆右側不超出點擊欄位的右側
+    var inputRight = inputEl.offsetLeft + inputEl.offsetWidth;
+    var pickerWidth = picker.offsetWidth || 220; // 預設日曆寬度
+    var calculatedLeft = inputRight - pickerWidth;
+    
+    // 如果靠右對齊算出來太靠左，最少貼著 offsetLeft
+    picker.style.left = (calculatedLeft < 0 ? inputEl.offsetLeft : calculatedLeft) + "px";
 
     var parts = inputEl.value.split("-");
     if (parts.length === 3) {
@@ -96,16 +118,16 @@ function dsRenderDays() {
         cell.innerText = dStr;
 
         if (!drawnDates.has(fullDate)) {
-            cell.classList.add("disabled"); // 未開獎的日期變灰格
+            cell.classList.add("disabled");
         } else {
             if (fullDate === curVal) cell.classList.add("selected");
             
-            // 🎯 只要點擊日期，立刻更新輸入框、關閉日曆，並直接觸發搜尋！
+            // 🎯 點擊日期格子：更新日期、關閉日曆、觸發搜尋
             cell.onclick = (function(val) {
                 return function() {
                     if (dsActiveInput) dsActiveInput.value = val;
                     document.getElementById("dsPicker").style.display = "none";
-                    dsSearch(); // 點擊即搜尋！
+                    dsSearch();
                 };
             })(fullDate);
         }
@@ -130,7 +152,7 @@ function getZzzByRange(box1Date, box2Date) {
     });
 }
 
-// 4. 點擊日期自動執行的區間搜尋動作
+// 4. 區間搜尋動作
 function dsSearch() {
     var v1 = document.getElementById('ds_start').value;
     var v2 = document.getElementById('ds_end').value;
