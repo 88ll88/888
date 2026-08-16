@@ -5942,18 +5942,21 @@ var ddd = [
   ["2007-01-02(二)","33","02","37","12","36"],
   ["2007-01-01(一)","27","38","09","11","28"]
 ];
-var baseId = 115114; 
-var baseDateStr = "2026-05-09(六)";
-var pivotIndex = ddd.findIndex(row => row[0] === baseDateStr);
-var zzz = ddd.map((item, index) => {
-    var dateStr = item[0];
-    var originalOrder = item.slice(1, 6).map(n => String(n).padStart(2, '0'));
-    var news = [...originalOrder].sort();
-    var currentId = 0;
-    if (pivotIndex !== -1) {
-        currentId = baseId + (pivotIndex - index);
-    }
-    return [dateStr, news, originalOrder, currentId];
+// 1. 最新一期（第一筆 ddd[0]）的期數，每次新增開獎時只需將此數字 +1
+var zzzInd = 115198; 
+
+// 2. 自動將 ddd 轉換為 zzz 陣列（網頁載入時只計算一次）
+var zzz = ddd.map(function(row, i) {
+  // 取出落球序 5 個號碼
+  var dropBalls = row.slice(1, 6); 
+  
+  // 自動由小到大排序成順球序
+  var orderBalls = dropBalls.slice().sort(function(a, b) { 
+    return parseInt(a, 10) - parseInt(b, 10); 
+  }); 
+
+  // 回傳格式：[日期, [順球序], [落球序], 期次]
+  return [row[0], orderBalls, dropBalls, zzzInd - i];
 });
 
 var CLR=[
