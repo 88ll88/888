@@ -5948,5 +5948,10 @@ var ddd=[
 ['2007-01-02',['33','02','37','12','36']],
 ['2007-01-01',['27','38','09','11','28']]
 ];
-var idx=115200; /*2026-08-18*/
-var zzz=ddd.map((row,i)=>[row[0],row[1].slice().sort((a,b)=>a-b),row[1],idx-i]);
+var baseIdx = 96001; 
+var zzz = ddd.map((row, i) => [
+    row[0],                          // 0: 日期
+    row[1].slice().sort((a,b)=>a-b), // 1: 大小順序 (小到大)
+    row[1],                          // 2: 落球序 (開出順序)
+    baseIdx + (ddd.length - 1 - i)   // 3: 期次 (自動推算)]);
+var idx = zzz[0][3];
