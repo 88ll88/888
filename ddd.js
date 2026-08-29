@@ -5957,20 +5957,32 @@ var ddd=[
 var baseIdx = 115200;
 var idxDate = '2026-08-18';
 
-// 1. 找出 2026-08-18 在 ddd 陣列中的索引位置 (i)
-var baseIndexInDdd = ddd.findIndex(row => row[0] === idxDate);
+// 計算兩個日期之間實際開獎的期數（扣除週日）
+function getIssueNumber(targetDateStr, baseDateStr, baseNumber) {
+  var target = new Date(targetDateStr);
+  var base = new Date(baseDateStr);
+  
+  if (target.getTime() === base.getTime()) return baseNumber;
+  
+  var step = target > base ? 1 : -1;
+  var count = 0;
+  var cur = new Date(base);
+  
+  while (cur.toISOString().slice(0, 10) !== targetDateStr) {
+    cur.setDate(cur.getDate() + step);
+    // 星期日 (0) 不開獎，不計入期數
+    if (cur.getDay() !== 0) {
+      count += step;
+    }
+  }
+  return baseNumber + count;
+}
 
-// 2. 映射轉換 zzz
-var zzz = ddd.map((row, i) => {
-  // 如果找不到 idxDate，預設拿最新的第一筆 (i=0) 作為基準計算
-  var targetIdx = baseIndexInDdd !== -1 
-    ? baseIdx + (baseIndexInDdd - i) 
-    : baseIdx - i;
-
+var zzz = ddd.map(row => {
   return [
-    row[0],                             // 日期
-    row[1].slice().sort((a, b) => a - b), // 大小順序 (修正了原先多餘的分號)
-    row[1],                             // 落球序
-    targetIdx                           // 期次 (idx)
+    row[0],                               // 日期
+    row[1].slice().sort((a, b) => a - b), // 大小順
+    row[1],                               // 落球序
+    getIssueNumber(row[0], idxDate, baseIdx) // 精準計算期次
   ];
 });
