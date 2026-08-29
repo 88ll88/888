@@ -5956,14 +5956,14 @@ var ddd=[
 ];
 var idx = 115200;
 var idxDate = '2026-08-18';
-for (var i=0; i<ddd.length; i++){
-     if (ddd[i][0] === idxDate) {
-         idx += i; break;
+for (var j=0; j<ddd.length; j++){
+     if (ddd[j][0] === idxDate) {
+         idx += j; break;
      }
 }
 var zzz = ddd.map((row, i) => [
     row[0],
     row[1].slice().sort((a, b) => a - b),
     row[1],
-    idx
+    idx + i
 ]);
