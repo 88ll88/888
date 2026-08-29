@@ -5954,35 +5954,31 @@ var ddd=[
 ['2007-01-02',['33','02','37','12','36']],
 ['2007-01-01',['27','38','09','11','28']]
 ];
-var baseIdx = 115200;
+var idx = 115200;
 var idxDate = '2026-08-18';
 
-// 計算兩個日期之間實際開獎的期數（扣除週日）
-function getIssueNumber(targetDateStr, baseDateStr, baseNumber) {
-  var target = new Date(targetDateStr);
-  var base = new Date(baseDateStr);
+// 計算兩個日期之間「扣除週日」後的實際期次差
+function calcIssue(targetDateStr) {
+  var d1 = new Date(idxDate);      // 2026-08-18
+  var d2 = new Date(targetDateStr); // 目標日期
   
-  if (target.getTime() === base.getTime()) return baseNumber;
-  
-  var step = target > base ? 1 : -1;
-  var count = 0;
-  var cur = new Date(base);
-  
+  var diff = 0;
+  var step = d2 > d1 ? 1 : -1;
+  var cur = new Date(d1);
+
   while (cur.toISOString().slice(0, 10) !== targetDateStr) {
     cur.setDate(cur.getDate() + step);
-    // 星期日 (0) 不開獎，不計入期數
+    // 星期日 (0) 不開獎，不跳期數
     if (cur.getDay() !== 0) {
-      count += step;
+      diff += step;
     }
   }
-  return baseNumber + count;
+  return idx + diff;
 }
 
-var zzz = ddd.map(row => {
-  return [
-    row[0],                               // 日期
-    row[1].slice().sort((a, b) => a - b), // 大小順
-    row[1],                               // 落球序
-    getIssueNumber(row[0], idxDate, baseIdx) // 精準計算期次
-  ];
-});
+var zzz = ddd.map(row => [
+  row[0],                               // 日期
+  row[1].slice().sort((a, b) => a - b), // 大小順
+  row[1],                               // 落球序
+  calcIssue(row[0])                     // 精準計算出來的期次
+]);
