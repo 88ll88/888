@@ -5965,5 +5965,5 @@ var zzz = ddd.map((row, i) => [
     row[0],
     row[1].slice().sort((a, b) => a - b),
     row[1],
-    idx - i
+    idx + i
 ]);
