@@ -5954,16 +5954,23 @@ var ddd=[
 ['2007-01-02',['33','02','37','12','36']],
 ['2007-01-01',['27','38','09','11','28']]
 ];
-var idx = 115200;
+var baseIdx = 115200;
 var idxDate = '2026-08-18';
-for (var j=0; j<ddd.length; j++){
-     if (ddd[j][0] === idxDate) {
-         idx += j; break;
-     }
-}
-var zzz = ddd.map((row, i) => [
-    row[0],
-    row[1].slice().sort((a, b) => a - b),
-    row[1],
-    idx + i
-]);
+
+// 1. 找出 2026-08-18 在 ddd 陣列中的索引位置 (i)
+var baseIndexInDdd = ddd.findIndex(row => row[0] === idxDate);
+
+// 2. 映射轉換 zzz
+var zzz = ddd.map((row, i) => {
+  // 如果找不到 idxDate，預設拿最新的第一筆 (i=0) 作為基準計算
+  var targetIdx = baseIndexInDdd !== -1 
+    ? baseIdx + (baseIndexInDdd - i) 
+    : baseIdx - i;
+
+  return [
+    row[0],                             // 日期
+    row[1].slice().sort((a, b) => a - b), // 大小順序 (修正了原先多餘的分號)
+    row[1],                             // 落球序
+    targetIdx                           // 期次 (idx)
+  ];
+});
