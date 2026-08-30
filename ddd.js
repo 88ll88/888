@@ -5956,13 +5956,5 @@ var ddd=[
 ];
 var idx = 115200;
 var idxDate = '2026-08-18';
-
-// 先找到 2026-08-18 是第幾筆
 var baseIndex = ddd.findIndex(row => row[0] === idxDate);
-
-var zzz = ddd.map((row, i) => [
-  row[0],
-  row[1].slice().sort((a, b) => a - b),
-  row[1],
-  idx + (baseIndex - i)  // 關鍵在這裡！比 8/18 新的會加上去，比 8/18 舊的會減下來
-]);
+var zzz = ddd.map((row,i)=>[row[0], row[1].slice().sort((a,b)=>a-b), row[1], idx+(baseIndex-i)]);
