@@ -11,6 +11,7 @@
         textarea { width: 100%; font-size: 14px; line-height: 1.5; box-sizing: border-box; padding: 8px; }
         #inputData { height: 120px; }
         #preview { height: 140px; background: #222; color: #00ff66; font-weight: bold; }
+        #last5Box { height: 130px; background: #1a1a2e; color: #ffdd57; font-weight: bold; }
         button { padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; }
         button:hover { background: #218838; }
         #msg { margin-top: 15px; font-size: 16px; font-weight: bold; }
@@ -37,6 +38,12 @@
     <button onclick="doUpdate()">OK (保留 var idx 並更新)</button>
 </div>
 
+<!-- 固定顯示最新 5 期的確認框 -->
+<div class="row" id="last5Row" style="display: none;">
+    <label style="color: #d9534f;">3. 最新 5 期開獎號碼確認 (已成功寫入 GitHub)：</label>
+    <textarea id="last5Box" readonly></textarea>
+</div>
+
 <div id="msg"></div>
 
 <script>
@@ -47,7 +54,7 @@
     let newLinesToUpdate = [];
     let currentSha = "";
     let existingMap = new Map();
-    let tailCode = ""; // 專門用來保存 var idx 等底部程式碼
+    let tailCode = ""; 
     let timer = null;
 
     window.onload = function() {
@@ -81,6 +88,7 @@
         newLinesToUpdate = [];
         previewBox.value = "";
         msgDiv.innerHTML = "";
+        document.getElementById('last5Row').style.display = "none";
 
         if (!rawText) return;
 
@@ -137,7 +145,6 @@
             return;
         }
 
-        // 讀取 GitHub 舊資料
         try {
             let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}?t=${Date.now()}`, {
                 headers: { 
@@ -154,7 +161,6 @@
             currentSha = fileData.sha;
             let rawOldContent = decodeURIComponent(escape(atob(fileData.content)));
 
-            // 抓取 var ddd 陣列結束處 ( ]; ) 之後的所有內容，保存為 tailCode
             tailCode = "";
             let endArrIndex = rawOldContent.indexOf("];");
             if (endArrIndex !== -1) {
@@ -208,6 +214,7 @@
                 existingMap.set(item.date, item.nums);
             }
 
+            // 日期降冪排序（最新期在最上面）
             let sortedDates = Array.from(existingMap.keys()).sort((a, b) => b.localeCompare(a));
 
             let formattedRows = sortedDates.map(d => {
@@ -215,10 +222,8 @@
                 return `['${d}',[${nums.map(n=>`'${n}'`).join(',')}]]`;
             });
 
-            // 重構 ddd 陣列
             let finalContent = `var ddd=[\n${formattedRows.join(',\n')}\n];\n`;
 
-            // 如果原本有 var idx 或其他尾部程式碼，接在最後面
             if (tailCode) {
                 finalContent += tailCode + "\n";
             }
@@ -240,6 +245,16 @@
             if (putRes.ok) {
                 msgDiv.style.color = "green";
                 msgDiv.innerHTML = "更新成功！`var ddd` 已全改為無空格格式，且底部的程式碼（如 `var idx`）已完美保留！";
+                
+                // 抓取最頂端的 5 個日期與號碼列出
+                let top5 = sortedDates.slice(0, 5).map(d => {
+                    let nums = existingMap.get(d);
+                    return `['${d}',[${nums.map(n=>`'${n}'`).join(',')}]]`;
+                }).join(',\n') + ',';
+
+                document.getElementById('last5Box').value = top5;
+                document.getElementById('last5Row').style.display = "block";
+
                 document.getElementById('inputData').value = "";
                 document.getElementById('preview').value = "";
                 newLinesToUpdate = [];
