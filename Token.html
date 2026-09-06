@@ -2,45 +2,37 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ddd.js 一鍵更新工具</title>
+    <title>ddd.js 更新工具</title>
     <style>
-        body { font-family: monospace; padding: 20px; max-width: 750px; margin: 0 auto; background: #fff; }
-        .row { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 15px; }
-        input[type="text"] { width: 100%; font-size: 14px; padding: 8px; box-sizing: border-box; }
-        textarea { width: 100%; font-size: 14px; line-height: 1.5; box-sizing: border-box; padding: 8px; }
-        #inputData { height: 120px; }
-        #preview { height: 140px; background: #222; color: #00ff66; font-weight: bold; }
-        #last5Box { height: 130px; background: #1a1a2e; color: #ffdd57; font-weight: bold; }
-        button { padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; }
-        button:hover { background: #218838; }
-        #msg { margin-top: 15px; font-size: 16px; font-weight: bold; }
+        body { font-family: monospace; padding: 15px; max-width: 600px; margin: 0 auto; }
+        .row { margin-bottom: 10px; }
+        label { display: block; font-weight: bold; margin-bottom: 3px; }
+        input, textarea { width: 100%; box-sizing: border-box; padding: 6px; }
+        #inputData { height: 60px; }
+        #last5Box { height: 120px; background: #1a1a2e; color: #ffdd57; font-weight: bold; }
+        button { width: 100%; padding: 10px; font-size: 16px; font-weight: bold; background: #28a745; color: white; border: none; cursor: pointer; }
+        #msg { margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="row">
-    <label>0. 設定 GitHub Personal Access Token (會自動儲存)：</label>
-    <input type="text" id="tokenInput" placeholder="請貼上你的 ghp_... Token" onchange="saveToken()">
+    <label>0. Token：</label>
+    <input type="text" id="tokenInput" onchange="saveToken()">
 </div>
 
 <div class="row">
-    <label>1. 貼上網站複製資料：</label>
-    <textarea id="inputData" placeholder="貼上資料後，會自動連線比對..." oninput="checkAndParse()"></textarea>
+    <label>1. 貼上資料：</label>
+    <textarea id="inputData" placeholder="貼上資料..."></textarea>
 </div>
 
 <div class="row">
-    <label>2. 檢查待更新的新資料（已有則不顯示）：</label>
-    <textarea id="preview" readonly placeholder="缺少的 [日期,['號碼']] 才會顯示在這裡..."></textarea>
+    <button onclick="doUpdate()">OK 更新</button>
 </div>
 
-<div class="row">
-    <button onclick="doUpdate()">OK (保留 var idx 並更新)</button>
-</div>
-
-<!-- 固定顯示最新 5 期的確認框 -->
-<div class="row" id="last5Row" style="display: none;">
-    <label style="color: #d9534f;">3. 最新 5 期開獎號碼確認 (已成功寫入 GitHub)：</label>
+<!-- 只留這個最後顯示最新 5 列的框 -->
+<div class="row" id="last5Row" style="display:none;">
+    <label style="color: #d9534f;">最新 5 列：</label>
     <textarea id="last5Box" readonly></textarea>
 </div>
 
@@ -51,66 +43,33 @@
     const REPO = "888";
     const FILE_PATH = "ddd.js";
 
-    let newLinesToUpdate = [];
-    let currentSha = "";
-    let existingMap = new Map();
-    let tailCode = ""; 
-    let timer = null;
-
     window.onload = function() {
         const savedToken = localStorage.getItem("github_token_ddd");
-        if (savedToken) {
-            document.getElementById("tokenInput").value = savedToken;
-        }
+        if (savedToken) document.getElementById("tokenInput").value = savedToken;
     };
 
     function saveToken() {
-        const val = document.getElementById("tokenInput").value.trim();
-        localStorage.setItem("github_token_ddd", val);
+        localStorage.setItem("github_token_ddd", document.getElementById("tokenInput").value.trim());
     }
 
-    function getToken() {
-        const val = document.getElementById("tokenInput").value.trim();
-        return val.replace(/[^\x00-\x7F]/g, "");
-    }
-
-    function checkAndParse() {
-        clearTimeout(timer);
-        timer = setTimeout(fetchAndCompare, 400);
-    }
-
-    async function fetchAndCompare() {
-        const token = getToken();
+    async function doUpdate() {
+        const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
         const rawText = document.getElementById('inputData').value.trim();
-        const previewBox = document.getElementById('preview');
         const msgDiv = document.getElementById('msg');
-
-        newLinesToUpdate = [];
-        previewBox.value = "";
-        msgDiv.innerHTML = "";
-        document.getElementById('last5Row').style.display = "none";
-
-        if (!rawText) return;
-
-        if (!token) {
-            msgDiv.style.color = "red";
-            msgDiv.innerHTML = "請先在最上方輸入框貼上你的 Token！";
-            return;
-        }
+        
+        if (!token) { msgDiv.style.color = "red"; msgDiv.innerHTML = "請輸入 Token！"; return; }
+        if (!rawText) { msgDiv.style.color = "red"; msgDiv.innerHTML = "請貼上資料！"; return; }
 
         msgDiv.style.color = "blue";
-        msgDiv.innerHTML = "正在連線 GitHub 比對舊資料...";
+        msgDiv.innerHTML = "更新中...";
 
         let inputMap = new Map();
-
-        // 模式 A：單行連寫格式
         let regTight = /(\d{4}-\d{2}-\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})/g;
         let tm;
         while ((tm = regTight.exec(rawText)) !== null) {
             inputMap.set(tm[1], [tm[7], tm[8], tm[9], tm[10], tm[11]]);
         }
 
-        // 模式 B：多行區塊格式
         if (inputMap.size === 0) {
             let blocks = rawText.split(/(?=第?\d{6,10}期|開獎日期)/g);
             for (let block of blocks) {
@@ -119,55 +78,32 @@
                     let d = dm[1];
                     let formattedDate = d;
                     let parts = d.match(/(\d{3})\/(\d{2})\/(\d{2})/);
-                    if (parts) {
-                        formattedDate = `${parseInt(parts[1]) + 1911}-${parts[2]}-${parts[3]}`;
-                    }
+                    if (parts) formattedDate = `${parseInt(parts[1]) + 1911}-${parts[2]}-${parts[3]}`;
 
                     let nums = [];
-                    let lines = block.split('\n');
-                    for (let line of lines) {
+                    for (let line of block.split('\n')) {
                         line = line.trim();
-                        if (/^\d{2}$/.test(line)) {
-                            nums.push(line);
-                        }
+                        if (/^\d{2}$/.test(line)) nums.push(line);
                     }
-
-                    if (nums.length >= 5) {
-                        inputMap.set(formattedDate, nums.slice(-5));
-                    }
+                    if (nums.length >= 5) inputMap.set(formattedDate, nums.slice(-5));
                 }
             }
-        }
-
-        if (inputMap.size === 0) {
-            msgDiv.style.color = "red";
-            msgDiv.innerHTML = "解析失敗，無法識別日期與號碼！";
-            return;
         }
 
         try {
             let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}?t=${Date.now()}`, {
-                headers: { 
-                    'Authorization': 'Bearer ' + token,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
+                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
             });
-
-            if (res.status === 401) throw new Error("Token 權限無效，請檢查 Token 是否正確。");
-            if (res.status === 404) throw new Error("找不到檔案，請確認儲存庫與路徑。");
-            if (!res.ok) throw new Error("讀取失敗，狀態碼：" + res.status);
+            if (!res.ok) throw new Error("讀取失敗");
 
             let fileData = await res.json();
-            currentSha = fileData.sha;
             let rawOldContent = decodeURIComponent(escape(atob(fileData.content)));
 
-            tailCode = "";
+            let tailCode = "";
             let endArrIndex = rawOldContent.indexOf("];");
-            if (endArrIndex !== -1) {
-                tailCode = rawOldContent.substring(endArrIndex + 2).trim();
-            }
+            if (endArrIndex !== -1) tailCode = rawOldContent.substring(endArrIndex + 2).trim();
 
-            existingMap.clear();
+            let existingMap = new Map();
             let rowRegex = /['"](\d{4}-\d{2}-\d{2})['"]\s*,\s*\[\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*\]/g;
             let rm;
             while ((rm = rowRegex.exec(rawOldContent)) !== null) {
@@ -175,58 +111,13 @@
             }
 
             for (let [date, nums] of inputMap.entries()) {
-                if (!existingMap.has(date)) {
-                    newLinesToUpdate.push({ date, nums });
-                }
+                existingMap.set(date, nums);
             }
 
-            if (newLinesToUpdate.length === 0) {
-                msgDiv.style.color = "orange";
-                msgDiv.innerHTML = "比對完成：貼上的資料已存在。點擊 OK 將重構格式（完整保留底部程式碼）！";
-                previewBox.value = "// 無新資料需要更新（點 OK 可直接重構 GitHub 檔案）";
-            } else {
-                msgDiv.style.color = "green";
-                msgDiv.innerHTML = `比對完成：發現 ${newLinesToUpdate.length} 筆新資料，請點擊 OK。`;
-                previewBox.value = newLinesToUpdate.map(item => `['${item.date}',[${item.nums.map(n=>`'${n}'`).join(',')}]]`).join(',\n') + ',';
-            }
-
-        } catch (e) {
-            msgDiv.style.color = "red";
-            msgDiv.innerHTML = "錯誤：" + e.message;
-        }
-    }
-
-    async function doUpdate() {
-        const token = getToken();
-        const msgDiv = document.getElementById('msg');
-
-        if (!token) {
-            msgDiv.style.color = "red";
-            msgDiv.innerHTML = "請先輸入 Token！";
-            return;
-        }
-
-        msgDiv.style.color = "blue";
-        msgDiv.innerHTML = "正在重構整份檔案並寫入 GitHub...";
-
-        try {
-            for (let item of newLinesToUpdate) {
-                existingMap.set(item.date, item.nums);
-            }
-
-            // 日期降冪排序（最新期在最上面）
             let sortedDates = Array.from(existingMap.keys()).sort((a, b) => b.localeCompare(a));
+            let formattedRows = sortedDates.map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`);
 
-            let formattedRows = sortedDates.map(d => {
-                let nums = existingMap.get(d);
-                return `['${d}',[${nums.map(n=>`'${n}'`).join(',')}]]`;
-            });
-
-            let finalContent = `var ddd=[\n${formattedRows.join(',\n')}\n];\n`;
-
-            if (tailCode) {
-                finalContent += tailCode + "\n";
-            }
+            let finalContent = `var ddd=[\n${formattedRows.join(',\n')}\n];\n` + (tailCode ? tailCode + "\n" : "");
 
             let putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, {
                 method: 'PUT',
@@ -236,33 +127,24 @@
                     'Accept': 'application/vnd.github.v3+json'
                 },
                 body: JSON.stringify({
-                    message: `更新 ddd 資料，並保留 var idx`,
+                    message: `更新 ddd 資料`,
                     content: btoa(unescape(encodeURIComponent(finalContent))),
-                    sha: currentSha
+                    sha: fileData.sha
                 })
             });
 
             if (putRes.ok) {
                 msgDiv.style.color = "green";
-                msgDiv.innerHTML = "更新成功！`var ddd` 已全改為無空格格式，且底部的程式碼（如 `var idx`）已完美保留！";
+                msgDiv.innerHTML = "更新成功！";
                 
-                // 抓取最頂端的 5 個日期與號碼列出
-                let top5 = sortedDates.slice(0, 5).map(d => {
-                    let nums = existingMap.get(d);
-                    return `['${d}',[${nums.map(n=>`'${n}'`).join(',')}]]`;
-                }).join(',\n') + ',';
-
+                // 只印出最新 5 列
+                let top5 = sortedDates.slice(0, 5).map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`).join(',\n') + ',';
                 document.getElementById('last5Box').value = top5;
                 document.getElementById('last5Row').style.display = "block";
-
                 document.getElementById('inputData').value = "";
-                document.getElementById('preview').value = "";
-                newLinesToUpdate = [];
             } else {
-                let err = await putRes.json();
-                throw new Error("寫入失敗：" + (err.message || putRes.status));
+                throw new Error("寫入失敗");
             }
-
         } catch (e) {
             msgDiv.style.color = "red";
             msgDiv.innerHTML = "錯誤：" + e.message;
