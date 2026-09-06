@@ -30,7 +30,7 @@
     <button onclick="doUpdate()">OK 更新</button>
 </div>
 
-<!-- 只留這個最後顯示最新 5 列的框 -->
+<!-- 最新 5 列顯示框 -->
 <div class="row" id="last5Row" style="display:none;">
     <label style="color: #d9534f;">最新 5 列：</label>
     <textarea id="last5Box" readonly></textarea>
@@ -137,7 +137,7 @@
                 msgDiv.style.color = "green";
                 msgDiv.innerHTML = "更新成功！";
                 
-                // 只印出最新 5 列
+                // 加 5 列：印出最新 5 期日期與號碼
                 let top5 = sortedDates.slice(0, 5).map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`).join(',\n') + ',';
                 document.getElementById('last5Box').value = top5;
                 document.getElementById('last5Row').style.display = "block";
