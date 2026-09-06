@@ -5,15 +5,16 @@
     <title>ddd.js 更新工具</title>
     <style>
         body { font-family: monospace; padding: 15px; max-width: 600px; margin: 0 auto; }
-        .row { margin-bottom: 10px; }
-        label { display: block; font-weight: bold; margin-bottom: 3px; }
-        input, textarea { width: 100%; box-sizing: border-box; padding: 6px; }
+        .row { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 16px; }
+        input, textarea { width: 100%; box-sizing: border-box; padding: 8px; font-size: 16px; }
         #inputData { height: 100px; }
-        #last5Box { height: 120px; background: #1a1a2e; color: #ffdd57; font-weight: bold; }
-        button { width: 100%; padding: 12px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; margin-bottom: 8px; }
-        .btn-parse { background: #007bff; color: white; }
-        .btn-update { background: #28a745; color: white; }
-        #confirmArea { padding: 10px; border: 1px solid #ccc; margin-top: 10px; display: none; }
+        #last5Box { height: 130px; background: #1a1a2e; color: #ffdd57; font-weight: bold; }
+        button { padding: 12px 24px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; }
+        .btn-check { background: #007bff; color: white; }
+        .btn-ok { background: #28a745; color: white; }
+        #boxYouWrite { display: none; padding: 10px; background: #e9ecef; border-radius: 4px; margin-bottom: 15px; }
+        #msgOk { color: #28a745; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -23,26 +24,27 @@
     <input type="text" id="tokenInput" onchange="saveToken()">
 </div>
 
-<!-- 我寫 (貼上 A) -->
+<!-- 我寫 a -->
 <div class="row">
-    <label>1. 貼上資料 (A)：</label>
-    <textarea id="inputData" placeholder="貼上資料..."></textarea>
+    <label>我寫 a：</label>
+    <textarea id="inputData" placeholder="請貼上資料 a..."></textarea>
 </div>
 
 <div class="row">
-    <button class="btn-parse" onclick="parseA()">比對資料</button>
+    <button class="btn-check" onclick="checkA()">比對資料</button>
 </div>
 
-<!-- 你寫 A, ok? (寫錯則不動) -->
-<div id="confirmArea">
-    <div style="color: green; font-size: 20px; font-weight: bold; margin-bottom: 8px;">A, ok?</div>
-    <button class="btn-update" onclick="doUpdate()">ok!</button>
+<!-- 你寫 a, ok? -->
+<div id="boxYouWrite">
+    <div style="color: #28a745; font-size: 22px; font-weight: bold; margin-bottom: 10px;">你寫：a, ok?</div>
+    <!-- 我 ok -->
+    <button class="btn-ok" onclick="doUpdate()">我 ok</button>
 </div>
 
-<!-- 我ok -> 你ok -> 你+5列 -->
-<div class="row" id="last5Row" style="display:none; margin-top: 15px;">
-    <div style="color: green; font-size: 20px; font-weight: bold; margin-bottom: 8px;">[ok]</div>
-    <label style="color: #d9534f;">最新 5 列：</label>
+<!-- 你 ok + 你 +5列 -->
+<div class="row" id="last5Row" style="display:none;">
+    <div id="msgOk">你 ok</div>
+    <label style="color: #d9534f;">你 +5列：</label>
     <textarea id="last5Box" readonly></textarea>
 </div>
 
@@ -65,15 +67,15 @@
         localStorage.setItem("github_token_ddd", document.getElementById("tokenInput").value.trim());
     }
 
-    async function parseA() {
+    async function checkA() {
         const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
         const rawText = document.getElementById('inputData').value.trim();
-        const confirmArea = document.getElementById('confirmArea');
+        const boxYouWrite = document.getElementById('boxYouWrite');
         
-        confirmArea.style.display = "none";
+        boxYouWrite.style.display = "none";
         document.getElementById('last5Row').style.display = "none";
 
-        // 寫錯（沒 Token 或沒資料）：不動
+        // 如果寫錯（沒有 Token 或沒貼資料）：我不動
         if (!token || !rawText) return;
 
         inputMapData.clear();
@@ -105,7 +107,7 @@
             }
         }
 
-        // 寫錯：不動
+        // 如果寫錯（解析不到號碼）：我不動
         if (inputMapData.size === 0) return;
 
         try {
@@ -113,7 +115,7 @@
                 headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
             });
             
-            // 連線失敗：不動
+            // 連線失敗：我不動
             if (!res.ok) return;
 
             let fileData = await res.json();
@@ -131,8 +133,8 @@
                 existingMap.set(rm[1], [rm[2], rm[3], rm[4], rm[5], rm[6]]);
             }
 
-            // 寫對了才顯示：A, ok?
-            confirmArea.style.display = "block";
+            // 寫對了：顯示「你寫：a, ok?」和「我 ok」按鈕
+            boxYouWrite.style.display = "block";
 
         } catch (e) {
             return;
@@ -168,9 +170,9 @@
 
             if (putRes.ok) {
                 document.getElementById('inputData').value = "";
-                document.getElementById('confirmArea').style.display = "none";
+                document.getElementById('boxYouWrite').style.display = "none";
                 
-                // 顯示 [ok] 與 最新 5 列
+                // 顯示「你 ok」與「你 +5列」
                 let top5 = sortedDates.slice(0, 5).map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`).join(',\n') + ',';
                 document.getElementById('last5Box').value = top5;
                 document.getElementById('last5Row').style.display = "block";
