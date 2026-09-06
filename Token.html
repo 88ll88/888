@@ -8,10 +8,12 @@
         .row { margin-bottom: 10px; }
         label { display: block; font-weight: bold; margin-bottom: 3px; }
         input, textarea { width: 100%; box-sizing: border-box; padding: 6px; }
-        #inputData { height: 60px; }
+        #inputData { height: 100px; }
         #last5Box { height: 120px; background: #1a1a2e; color: #ffdd57; font-weight: bold; }
-        button { width: 100%; padding: 10px; font-size: 16px; font-weight: bold; background: #28a745; color: white; border: none; cursor: pointer; }
-        #msg { margin-top: 10px; font-weight: bold; }
+        button { width: 100%; padding: 12px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; margin-bottom: 8px; }
+        .btn-parse { background: #007bff; color: white; }
+        .btn-update { background: #28a745; color: white; }
+        #confirmArea { background: #f8f9fa; padding: 10px; border: 1px solid #ccc; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -21,27 +23,38 @@
     <input type="text" id="tokenInput" onchange="saveToken()">
 </div>
 
+<!-- 我寫 [大框..A...] -->
 <div class="row">
-    <label>1. 貼上資料：</label>
+    <label>1. 貼上資料 (A)：</label>
     <textarea id="inputData" placeholder="貼上資料..."></textarea>
 </div>
 
 <div class="row">
-    <button onclick="doUpdate()">OK 更新</button>
+    <button class="btn-parse" onclick="parseA()">比對資料</button>
 </div>
 
-<!-- 最新 5 列顯示框 -->
-<div class="row" id="last5Row" style="display:none;">
+<!-- 你寫框下方綠色[A, ok?] -->
+<div id="confirmArea">
+    <div id="statusText" style="color: green; font-size: 18px; font-weight: bold; margin-bottom: 8px;"></div>
+    <!-- 我[ok!] -->
+    <button class="btn-update" onclick="doUpdate()">ok!</button>
+</div>
+
+<!-- 你+5列 -->
+<div class="row" id="last5Row" style="display:none; margin-top: 15px;">
     <label style="color: #d9534f;">最新 5 列：</label>
     <textarea id="last5Box" readonly></textarea>
 </div>
-
-<div id="msg"></div>
 
 <script>
     const OWNER = "88ll88";
     const REPO = "888";
     const FILE_PATH = "ddd.js";
+
+    let inputMapData = new Map();
+    let currentSha = "";
+    let existingMap = new Map();
+    let tailCode = "";
 
     window.onload = function() {
         const savedToken = localStorage.getItem("github_token_ddd");
@@ -52,25 +65,27 @@
         localStorage.setItem("github_token_ddd", document.getElementById("tokenInput").value.trim());
     }
 
-    async function doUpdate() {
+    // 1. 處理 A 資料，完成後顯示 [A, ok?]
+    async function parseA() {
         const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
         const rawText = document.getElementById('inputData').value.trim();
-        const msgDiv = document.getElementById('msg');
+        const confirmArea = document.getElementById('confirmArea');
+        const statusText = document.getElementById('statusText');
         
-        if (!token) { msgDiv.style.color = "red"; msgDiv.innerHTML = "請輸入 Token！"; return; }
-        if (!rawText) { msgDiv.style.color = "red"; msgDiv.innerHTML = "請貼上資料！"; return; }
+        confirmArea.style.display = "none";
+        document.getElementById('last5Row').style.display = "none";
 
-        msgDiv.style.color = "blue";
-        msgDiv.innerHTML = "更新中...";
+        if (!token || !rawText) return;
 
-        let inputMap = new Map();
+        inputMapData.clear();
+
         let regTight = /(\d{4}-\d{2}-\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})/g;
         let tm;
         while ((tm = regTight.exec(rawText)) !== null) {
-            inputMap.set(tm[1], [tm[7], tm[8], tm[9], tm[10], tm[11]]);
+            inputMapData.set(tm[1], [tm[7], tm[8], tm[9], tm[10], tm[11]]);
         }
 
-        if (inputMap.size === 0) {
+        if (inputMapData.size === 0) {
             let blocks = rawText.split(/(?=第?\d{6,10}期|開獎日期)/g);
             for (let block of blocks) {
                 let dm = block.match(/(?:開獎日期[:\s]*)?(\d{3}\/\d{2}\/\d{2}|\d{4}-\d{2}-\d{2})/);
@@ -85,7 +100,7 @@
                         line = line.trim();
                         if (/^\d{2}$/.test(line)) nums.push(line);
                     }
-                    if (nums.length >= 5) inputMap.set(formattedDate, nums.slice(-5));
+                    if (nums.length >= 5) inputMapData.set(formattedDate, nums.slice(-5));
                 }
             }
         }
@@ -94,31 +109,46 @@
             let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}?t=${Date.now()}`, {
                 headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
             });
-            if (!res.ok) throw new Error("讀取失敗");
+            if (!res.ok) return;
 
             let fileData = await res.json();
+            currentSha = fileData.sha;
             let rawOldContent = decodeURIComponent(escape(atob(fileData.content)));
 
-            let tailCode = "";
+            tailCode = "";
             let endArrIndex = rawOldContent.indexOf("];");
             if (endArrIndex !== -1) tailCode = rawOldContent.substring(endArrIndex + 2).trim();
 
-            let existingMap = new Map();
+            existingMap.clear();
             let rowRegex = /['"](\d{4}-\d{2}-\d{2})['"]\s*,\s*\[\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*\]/g;
             let rm;
             while ((rm = rowRegex.exec(rawOldContent)) !== null) {
                 existingMap.set(rm[1], [rm[2], rm[3], rm[4], rm[5], rm[6]]);
             }
 
-            for (let [date, nums] of inputMap.entries()) {
-                existingMap.set(date, nums);
-            }
+            // 顯示 綠色 [A, ok?]
+            statusText.innerText = "A, ok?";
+            confirmArea.style.display = "block";
 
-            let sortedDates = Array.from(existingMap.keys()).sort((a, b) => b.localeCompare(a));
-            let formattedRows = sortedDates.map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`);
+        } catch (e) {
+            console.error(e);
+        }
+    }
 
-            let finalContent = `var ddd=[\n${formattedRows.join(',\n')}\n];\n` + (tailCode ? tailCode + "\n" : "");
+    // 2. 按下 [ok!] 寫入 GitHub，並 +5列
+    async function doUpdate() {
+        const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
 
+        for (let [date, nums] of inputMapData.entries()) {
+            existingMap.set(date, nums);
+        }
+
+        let sortedDates = Array.from(existingMap.keys()).sort((a, b) => b.localeCompare(a));
+        let formattedRows = sortedDates.map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`);
+
+        let finalContent = `var ddd=[\n${formattedRows.join(',\n')}\n];\n` + (tailCode ? tailCode + "\n" : "");
+
+        try {
             let putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, {
                 method: 'PUT',
                 headers: {
@@ -129,25 +159,22 @@
                 body: JSON.stringify({
                     message: `更新 ddd 資料`,
                     content: btoa(unescape(encodeURIComponent(finalContent))),
-                    sha: fileData.sha
+                    sha: currentSha
                 })
             });
 
             if (putRes.ok) {
-                msgDiv.style.color = "green";
-                msgDiv.innerHTML = "更新成功！";
+                // 清除輸入框，隱藏確認區
+                document.getElementById('inputData').value = "";
+                document.getElementById('confirmArea').style.display = "none";
                 
-                // 加 5 列：印出最新 5 期日期與號碼
+                // 你+5列：印出最新 5 列
                 let top5 = sortedDates.slice(0, 5).map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`).join(',\n') + ',';
                 document.getElementById('last5Box').value = top5;
                 document.getElementById('last5Row').style.display = "block";
-                document.getElementById('inputData').value = "";
-            } else {
-                throw new Error("寫入失敗");
             }
         } catch (e) {
-            msgDiv.style.color = "red";
-            msgDiv.innerHTML = "錯誤：" + e.message;
+            console.error(e);
         }
     }
 </script>
