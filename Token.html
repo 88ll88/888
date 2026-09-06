@@ -13,7 +13,7 @@
         button { width: 100%; padding: 12px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; margin-bottom: 8px; }
         .btn-parse { background: #007bff; color: white; }
         .btn-update { background: #28a745; color: white; }
-        #confirmArea { background: #f8f9fa; padding: 10px; border: 1px solid #ccc; margin-top: 10px; display: none; }
+        #confirmArea { padding: 10px; border: 1px solid #ccc; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -23,7 +23,7 @@
     <input type="text" id="tokenInput" onchange="saveToken()">
 </div>
 
-<!-- 我寫 [大框..A...] -->
+<!-- 我寫 -->
 <div class="row">
     <label>1. 貼上資料 (A)：</label>
     <textarea id="inputData" placeholder="貼上資料..."></textarea>
@@ -33,15 +33,15 @@
     <button class="btn-parse" onclick="parseA()">比對資料</button>
 </div>
 
-<!-- 你寫框下方綠色[A, ok?] -->
+<!-- 你寫對才顯示；寫錯完全不動 -->
 <div id="confirmArea">
-    <div id="statusText" style="color: green; font-size: 18px; font-weight: bold; margin-bottom: 8px;"></div>
-    <!-- 我[ok!] -->
-    <button class="btn-update" onclick="doUpdate()">ok!</button>
+    <div id="statusText" style="color: green; font-size: 18px; font-weight: bold; margin-bottom: 8px;">A, ok?</div>
+    <button id="okBtn" class="btn-update" onclick="doUpdate()">ok!</button>
 </div>
 
-<!-- 你+5列 -->
+<!-- 你ok -> 我ok -> 你+5 -->
 <div class="row" id="last5Row" style="display:none; margin-top: 15px;">
+    <div style="color: green; font-size: 18px; font-weight: bold; margin-bottom: 8px;">[ok]</div>
     <label style="color: #d9534f;">最新 5 列：</label>
     <textarea id="last5Box" readonly></textarea>
 </div>
@@ -65,20 +65,21 @@
         localStorage.setItem("github_token_ddd", document.getElementById("tokenInput").value.trim());
     }
 
-    // 1. 處理 A 資料，完成後顯示 [A, ok?]
     async function parseA() {
         const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
         const rawText = document.getElementById('inputData').value.trim();
         const confirmArea = document.getElementById('confirmArea');
-        const statusText = document.getElementById('statusText');
         
+        // 先隱藏所有輸出區域
         confirmArea.style.display = "none";
         document.getElementById('last5Row').style.display = "none";
 
+        // 寫錯（沒 Token 或沒資料）：我不動，直接返回
         if (!token || !rawText) return;
 
         inputMapData.clear();
 
+        // 解析資料
         let regTight = /(\d{4}-\d{2}-\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})/g;
         let tm;
         while ((tm = regTight.exec(rawText)) !== null) {
@@ -105,10 +106,16 @@
             }
         }
 
+        // 寫錯（解析失敗）：我不動，直接返回
+        if (inputMapData.size === 0) return;
+
+        // 連線 GitHub
         try {
             let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}?t=${Date.now()}`, {
                 headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
             });
+            
+            // 寫錯（連線失敗）：我不動
             if (!res.ok) return;
 
             let fileData = await res.json();
@@ -126,16 +133,15 @@
                 existingMap.set(rm[1], [rm[2], rm[3], rm[4], rm[5], rm[6]]);
             }
 
-            // 顯示 綠色 [A, ok?]
-            statusText.innerText = "A, ok?";
+            // 你寫對了：才顯示 A, ok?
             confirmArea.style.display = "block";
 
         } catch (e) {
-            console.error(e);
+            // 出錯：我不動
+            return;
         }
     }
 
-    // 2. 按下 [ok!] 寫入 GitHub，並 +5列
     async function doUpdate() {
         const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
 
@@ -164,17 +170,17 @@
             });
 
             if (putRes.ok) {
-                // 清除輸入框，隱藏確認區
                 document.getElementById('inputData').value = "";
                 document.getElementById('confirmArea').style.display = "none";
                 
-                // 你+5列：印出最新 5 列
+                // 我ok + 你+5列
                 let top5 = sortedDates.slice(0, 5).map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`).join(',\n') + ',';
                 document.getElementById('last5Box').value = top5;
                 document.getElementById('last5Row').style.display = "block";
             }
         } catch (e) {
-            console.error(e);
+            // 出錯：我不動
+            return;
         }
     }
 </script>
