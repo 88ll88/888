@@ -5958,7 +5958,3 @@ var ddd=[
 ['2007-01-02',['33','02','37','12','36']],
 ['2007-01-01',['27','38','09','11','28']]
 ];
-var idx = 115200;
-var idxDate = '2026-08-18';
-var baseIndex = ddd.findIndex(row => row[0] === idxDate);
-var zzz = ddd.map((row,i)=>[row[0], row[1].slice().sort((a,b)=>a-b), row[1], idx+(baseIndex-i)]);
