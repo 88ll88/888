@@ -1,95 +1,282 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <title>539 自動更新 ddd.js 工具</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-    input, button, textarea { width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
-    textarea { height: 180px; }
-  </style>
+<meta charset="UTF-8">
+<title>539 自動檢查與寫入</title>
+<style>
+  body {
+    background: #000;
+    color: #fff;
+    font-family: monospace;
+    padding: 20px;
+    margin: 0;
+  }
+  .token-box {
+    margin-bottom: 15px;
+  }
+  input[type="password"] {
+    background: #111;
+    color: #888;
+    border: 1px solid #333;
+    padding: 8px;
+    width: 300px;
+  }
+  #editor {
+    width: 100%;
+    height: 400px; /* 高度從 600px 減 200px 改為 400px */
+    background: #050505;
+    border: 1px solid #fff; /* 外層大框 */
+    padding: 10px;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.5;
+    outline: none;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .user-text {
+    color: #2ecc71; /* 綠色 */
+    border: 1px solid #fff; /* 上框 */
+    padding: 8px;
+  }
+  .bot-box {
+    border: 1px solid #fff; /* 下框 */
+    padding: 8px;
+  }
+  .bot-red {
+    color: #e74c3c; /* 紅色 */
+  }
+  .bot-blue {
+    color: #3498db; /* 藍色 */
+  }
+  #status {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #666;
+  }
+</style>
 </head>
 <body>
 
-  <h2>今彩539 自動抓取與 GitHub 更新工具</h2>
+<div class="token-box">
+  <input type="password" id="userToken" placeholder="GitHub Token" onchange="localStorage.setItem('gh_token_539', this.value)">
+</div>
 
-  <label>GitHub Personal Access Token (PAT):</label>
-  <input type="password" id="ghToken" placeholder="請貼上 ghp_xxxxxxxxxxxx">
+<div id="editor" contenteditable="true" spellcheck="false"></div>
+<div id="status"></div>
 
-  <label>GitHub 帳號 / 儲存庫名稱:</label>
-  <input type="text" id="ghRepo" value="88ll88/888">
+<script>
+const GH_OWNER = '88ll88';
+const GH_REPO = '888';
+const GH_PATH = 'ddd.js';
 
-  <button onclick="fetchAndPush()">1. 抓取最新開獎資料並更新至 GitHub</button>
+let timer = null;
+let isUpdating = false;
 
-  <h3>執行紀錄：</h3>
-  <textarea id="log" readonly></textarea>
+window.onload = function() {
+  let token = localStorage.getItem('gh_token_539');
+  if (token) document.getElementById('userToken').value = token;
 
-  <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbztQN0H72SHHNBYQDlJLsS6G3R8osV_C5c2LM1NxoI6c9W-aPS41oJHLaTc8M9hiYpQhA/exec";
+  let editor = document.getElementById('editor');
+  editor.addEventListener('input', function() {
+    if (isUpdating) return;
+    clearTimeout(timer);
+    timer = setTimeout(autoRun, 500);
+  });
+};
 
-    function log(msg) {
-      document.getElementById('log').value += msg + "\n";
+function setStatus(msg) {
+  document.getElementById('status').innerText = msg;
+}
+
+function b64ToUtf8(str) {
+  return decodeURIComponent(escape(window.atob(str)));
+}
+
+function utf8ToB64(str) {
+  return window.btoa(unescape(encodeURIComponent(str)));
+}
+
+function isSunday(dateObj) {
+  return dateObj.getDay() === 0;
+}
+
+function formatDate(d) {
+  let yyyy = d.getFullYear();
+  let mm = String(d.getMonth() + 1).padStart(2, '0');
+  let dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getTop6TargetDates() {
+  let now = new Date();
+  let hour = now.getHours();
+  let minute = now.getMinutes();
+
+  let startDate = new Date(now);
+  if (hour < 20 || (hour === 20 && minute < 40)) {
+    startDate.setDate(startDate.getDate() - 1);
+  }
+
+  let top6 = [];
+  let curr = new Date(startDate);
+
+  while (top6.length < 6) {
+    if (!isSunday(curr)) {
+      top6.push(formatDate(curr));
     }
+    curr.setDate(curr.getDate() - 1);
+  }
+  return top6;
+}
 
-    async function fetchAndPush() {
-      const token = document.getElementById('ghToken').value.trim();
-      const repo = document.getElementById('ghRepo').value.trim();
+function parseDataToMap(str, targetMap) {
+  let regex2 = /\['(20\d{2}-\d{2}-\d{2})',\[(.*?)\]\]/g;
+  let match;
+  let found2 = false;
 
-      if (!token || !repo) {
-        alert("請先輸入 GitHub Token 與 Repo 名稱！");
-        return;
-      }
+  while ((match = regex2.exec(str)) !== null) {
+    found2 = true;
+    targetMap.set(match[1], match[2]);
+  }
 
-      log("開始從 9800 抓取資料...");
+  if (!found2) {
+    let lines = str.split(/(?=115\d{3}20)/);
+    if (lines.length <= 1) lines = str.split('\n');
 
-      try {
-        const res = await fetch(GAS_URL, { redirect: "follow" });
-        const fetchedText = await res.text();
-        log("抓取成功！取得最新開獎內容：\n" + fetchedText);
-
-        const filePath = "ddd.js";
-        const ghApiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
-        
-        log("正在向 GitHub 查詢 ddd.js 現有狀態...");
-        const getFileRes = await fetch(ghApiUrl, {
-          headers: { "Authorization": `token ${token}` }
-        });
-
-        let sha = "";
-        let currentContent = "";
-        if (getFileRes.ok) {
-          const fileData = await getFileRes.json();
-          sha = fileData.sha;
-          currentContent = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g, ''))));
+    lines.forEach(line => {
+      let dateMatch = (/(20\d{2}-\d{2}-\d{2})/).exec(line);
+      if (dateMatch) {
+        let dateStr = dateMatch[1];
+        let nums = line.substring(dateMatch.index + 10).match(/\d{2}/g);
+        if (nums && nums.length >= 5) {
+          let dropBalls = nums.slice(-5).map(n => `'${n}'`).join(',');
+          targetMap.set(dateStr, dropBalls);
         }
-
-        const updatedContent = fetchedText + "\n" + currentContent;
-
-        log("正在提交更新至 GitHub...");
-        const putRes = await fetch(ghApiUrl, {
-          method: "PUT",
-          headers: {
-            "Authorization": `token ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            message: "Auto-update ddd.js",
-            content: btoa(unescape(encodeURIComponent(updatedContent))),
-            sha: sha
-          })
-        });
-
-        if (putRes.ok) {
-          log("🎉 GitHub ddd.js 更新成功！");
-        } else {
-          const errData = await putRes.json();
-          log("❌ GitHub 更新失敗：" + errData.message);
-        }
-
-      } catch (err) {
-        log("❌ 發生錯誤：" + err.message);
       }
+    });
+  }
+}
+
+async function autoRun() {
+  let token = document.getElementById('userToken').value.trim();
+  let editor = document.getElementById('editor');
+
+  let fullText = editor.innerText;
+  let userText = fullText.split('\n\n')[0].trim();
+
+  if (!userText) {
+    setStatus('');
+    return;
+  }
+
+  if (!token) {
+    setStatus('請輸入 Token');
+    return;
+  }
+
+  setStatus('讀取中...');
+
+  let sha = '';
+  let githubDataMap = new Map();
+
+  try {
+    let url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+    let res = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+    if (res.ok) {
+      let resJson = await res.json();
+      sha = resJson.sha;
+      let rawContent = b64ToUtf8(resJson.content.replace(/\s/g, ''));
+      parseDataToMap(rawContent, githubDataMap);
+    } else {
+      setStatus('讀取 GitHub 失敗');
+      return;
     }
-  </script>
+  } catch (e) {
+    setStatus('連線失敗');
+    return;
+  }
+
+  let inputDataMap = new Map();
+  parseDataToMap(userText, inputDataMap);
+
+  if (inputDataMap.size === 0) {
+    setStatus('解析失敗');
+    return;
+  }
+
+  let mergedMap = new Map(githubDataMap);
+  inputDataMap.forEach((v, k) => mergedMap.set(k, v));
+
+  let top6Dates = getTop6TargetDates();
+
+  isUpdating = true;
+
+  let htmlArr = [];
+  // 1. 上框 (綠色) 六列
+  htmlArr.push(`<div class="user-text">${userText.replace(/\n/g, '<br>')}</div>`);
+  
+  // 空列 (大框中間分隔)
+  htmlArr.push('<br>');
+
+  // 2. 下框 (藍色 / 紅色) 六列
+  htmlArr.push('<div class="bot-box">');
+  top6Dates.forEach(dateStr => {
+    if (mergedMap.has(dateStr)) {
+      let balls = mergedMap.get(dateStr);
+      htmlArr.push(`<div class="bot-blue">['${dateStr}',[${balls}]],</div>`);
+    } else {
+      htmlArr.push(`<div class="bot-red">['${dateStr}',['缺漏']],</div>`);
+    }
+  });
+  htmlArr.push('</div>');
+
+  editor.innerHTML = htmlArr.join('');
+
+  let sel = window.getSelection();
+  let range = document.createRange();
+  let userTextEl = editor.querySelector('.user-text');
+  if (userTextEl) {
+    range.selectNodeContents(userTextEl);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  isUpdating = false;
+
+  let sortedAllDates = Array.from(mergedMap.keys()).sort((a, b) => b.localeCompare(a));
+  let finalLines = sortedAllDates.map(d => `['${d}',[${mergedMap.get(d)}]]`);
+  let finalFileContent = 'var ddd=[\n' + finalLines.join(',\n') + '\n];';
+
+  setStatus('寫入中...');
+
+  try {
+    let url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+    let putRes = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: '自動更新',
+        content: utf8ToB64(finalFileContent),
+        sha: sha
+      })
+    });
+
+    if (putRes.ok) {
+      setStatus('成功');
+    } else {
+      setStatus('寫入失敗');
+    }
+  } catch (e) {
+    setStatus('錯誤');
+  }
+}
+</script>
+
 </body>
 </html>
