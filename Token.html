@@ -1,186 +1,281 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <title>ddd.js 更新工具</title>
-    <style>
-        body { font-family: monospace; padding: 15px; max-width: 600px; margin: 0 auto; }
-        .row { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 16px; }
-        input, textarea { width: 100%; box-sizing: border-box; padding: 8px; font-size: 16px; }
-        #inputData { height: 100px; }
-        #last5Box { height: 130px; background: #1a1a2e; color: #ffdd57; font-weight: bold; }
-        button { padding: 12px 24px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; }
-        .btn-check { background: #007bff; color: white; }
-        .btn-ok { background: #28a745; color: white; }
-        #boxYouWrite { display: none; padding: 10px; background: #e9ecef; border-radius: 4px; margin-bottom: 15px; }
-        #msgOk { color: #28a745; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
-    </style>
+<meta charset="UTF-8">
+<title>539 自動檢查與寫入</title>
+<style>
+  body {
+    background: #000;
+    color: #fff;
+    font-family: monospace;
+    padding: 20px;
+    margin: 0;
+  }
+  .token-box {
+    margin-bottom: 15px;
+  }
+  input[type="password"] {
+    background: #111;
+    color: #888;
+    border: 1px solid #333;
+    padding: 8px;
+    width: 300px;
+  }
+  #editor {
+    width: 100%;
+    height: 400px; /* 高度從 600px 減 200px 改為 400px */
+    background: #050505;
+    border: 1px solid #fff; /* 外層大框 */
+    padding: 10px;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.5;
+    outline: none;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .user-text {
+    color: #2ecc71; /* 綠色 */
+    border: 1px solid #fff; /* 上框 */
+    padding: 8px;
+  }
+  .bot-box {
+    border: 1px solid #fff; /* 下框 */
+    padding: 8px;
+  }
+  .bot-red {
+    color: #e74c3c; /* 紅色 */
+  }
+  .bot-blue {
+    color: #3498db; /* 藍色 */
+  }
+  #status {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #666;
+  }
+</style>
 </head>
 <body>
 
-<div class="row">
-    <label>0. Token：</label>
-    <input type="text" id="tokenInput" onchange="saveToken()">
+<div class="token-box">
+  <input type="password" id="userToken" placeholder="GitHub Token" onchange="localStorage.setItem('gh_token_539', this.value)">
 </div>
 
-<!-- 我寫 a -->
-<div class="row">
-    <label>我寫 a：</label>
-    <textarea id="inputData" placeholder="請貼上資料 a..."></textarea>
-</div>
-
-<div class="row">
-    <button class="btn-check" onclick="checkA()">比對資料</button>
-</div>
-
-<!-- 你寫 a, ok? -->
-<div id="boxYouWrite">
-    <div style="color: #28a745; font-size: 22px; font-weight: bold; margin-bottom: 10px;">你寫：a, ok?</div>
-    <!-- 我 ok -->
-    <button class="btn-ok" onclick="doUpdate()">我 ok</button>
-</div>
-
-<!-- 你 ok + 你 +5列 -->
-<div class="row" id="last5Row" style="display:none;">
-    <div id="msgOk">你 ok</div>
-    <label style="color: #d9534f;">你 +5列：</label>
-    <textarea id="last5Box" readonly></textarea>
-</div>
+<div id="editor" contenteditable="true" spellcheck="false"></div>
+<div id="status"></div>
 
 <script>
-    const OWNER = "88ll88";
-    const REPO = "888";
-    const FILE_PATH = "ddd.js";
+const GH_OWNER = '88ll88';
+const GH_REPO = '888';
+const GH_PATH = 'ddd.js';
 
-    let inputMapData = new Map();
-    let currentSha = "";
-    let existingMap = new Map();
-    let tailCode = "";
+let timer = null;
+let isUpdating = false;
 
-    window.onload = function() {
-        const savedToken = localStorage.getItem("github_token_ddd");
-        if (savedToken) document.getElementById("tokenInput").value = savedToken;
-    };
+window.onload = function() {
+  let token = localStorage.getItem('gh_token_539');
+  if (token) document.getElementById('userToken').value = token;
 
-    function saveToken() {
-        localStorage.setItem("github_token_ddd", document.getElementById("tokenInput").value.trim());
+  let editor = document.getElementById('editor');
+  editor.addEventListener('input', function() {
+    if (isUpdating) return;
+    clearTimeout(timer);
+    timer = setTimeout(autoRun, 500);
+  });
+};
+
+function setStatus(msg) {
+  document.getElementById('status').innerText = msg;
+}
+
+function b64ToUtf8(str) {
+  return decodeURIComponent(escape(window.atob(str)));
+}
+
+function utf8ToB64(str) {
+  return window.btoa(unescape(encodeURIComponent(str)));
+}
+
+function isSunday(dateObj) {
+  return dateObj.getDay() === 0;
+}
+
+function formatDate(d) {
+  let yyyy = d.getFullYear();
+  let mm = String(d.getMonth() + 1).padStart(2, '0');
+  let dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getTop6TargetDates() {
+  let now = new Date();
+  let hour = now.getHours();
+  let minute = now.getMinutes();
+
+  let startDate = new Date(now);
+  if (hour < 20 || (hour === 20 && minute < 40)) {
+    startDate.setDate(startDate.getDate() - 1);
+  }
+
+  let top6 = [];
+  let curr = new Date(startDate);
+
+  while (top6.length < 6) {
+    if (!isSunday(curr)) {
+      top6.push(formatDate(curr));
     }
+    curr.setDate(curr.getDate() - 1);
+  }
+  return top6;
+}
 
-    async function checkA() {
-        const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
-        const rawText = document.getElementById('inputData').value.trim();
-        const boxYouWrite = document.getElementById('boxYouWrite');
-        
-        boxYouWrite.style.display = "none";
-        document.getElementById('last5Row').style.display = "none";
+function parseDataToMap(str, targetMap) {
+  let regex2 = /\['(20\d{2}-\d{2}-\d{2})',\[(.*?)\]\]/g;
+  let match;
+  let found2 = false;
 
-        // 如果寫錯（沒有 Token 或沒貼資料）：我不動
-        if (!token || !rawText) return;
+  while ((match = regex2.exec(str)) !== null) {
+    found2 = true;
+    targetMap.set(match[1], match[2]);
+  }
 
-        inputMapData.clear();
+  if (!found2) {
+    let lines = str.split(/(?=115\d{3}20)/);
+    if (lines.length <= 1) lines = str.split('\n');
 
-        // 解析資料
-        let regTight = /(\d{4}-\d{2}-\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})/g;
-        let tm;
-        while ((tm = regTight.exec(rawText)) !== null) {
-            inputMapData.set(tm[1], [tm[7], tm[8], tm[9], tm[10], tm[11]]);
+    lines.forEach(line => {
+      let dateMatch = (/(20\d{2}-\d{2}-\d{2})/).exec(line);
+      if (dateMatch) {
+        let dateStr = dateMatch[1];
+        let nums = line.substring(dateMatch.index + 10).match(/\d{2}/g);
+        if (nums && nums.length >= 5) {
+          let dropBalls = nums.slice(-5).map(n => `'${n}'`).join(',');
+          targetMap.set(dateStr, dropBalls);
         }
+      }
+    });
+  }
+}
 
-        if (inputMapData.size === 0) {
-            let blocks = rawText.split(/(?=第?\d{6,10}期|開獎日期)/g);
-            for (let block of blocks) {
-                let dm = block.match(/(?:開獎日期[:\s]*)?(\d{3}\/\d{2}\/\d{2}|\d{4}-\d{2}-\d{2})/);
-                if (dm) {
-                    let d = dm[1];
-                    let formattedDate = d;
-                    let parts = d.match(/(\d{3})\/(\d{2})\/(\d{2})/);
-                    if (parts) formattedDate = `${parseInt(parts[1]) + 1911}-${parts[2]}-${parts[3]}`;
+async function autoRun() {
+  let token = document.getElementById('userToken').value.trim();
+  let editor = document.getElementById('editor');
 
-                    let nums = [];
-                    for (let line of block.split('\n')) {
-                        line = line.trim();
-                        if (/^\d{2}$/.test(line)) nums.push(line);
-                    }
-                    if (nums.length >= 5) inputMapData.set(formattedDate, nums.slice(-5));
-                }
-            }
-        }
+  let fullText = editor.innerText;
+  let userText = fullText.split('\n\n')[0].trim();
 
-        // 如果寫錯（解析不到號碼）：我不動
-        if (inputMapData.size === 0) return;
+  if (!userText) {
+    setStatus('');
+    return;
+  }
 
-        try {
-            let res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}?t=${Date.now()}`, {
-                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
-            });
-            
-            // 連線失敗：我不動
-            if (!res.ok) return;
+  if (!token) {
+    setStatus('請輸入 Token');
+    return;
+  }
 
-            let fileData = await res.json();
-            currentSha = fileData.sha;
-            let rawOldContent = decodeURIComponent(escape(atob(fileData.content)));
+  setStatus('讀取中...');
 
-            tailCode = "";
-            let endArrIndex = rawOldContent.indexOf("];");
-            if (endArrIndex !== -1) tailCode = rawOldContent.substring(endArrIndex + 2).trim();
+  let sha = '';
+  let githubDataMap = new Map();
 
-            existingMap.clear();
-            let rowRegex = /['"](\d{4}-\d{2}-\d{2})['"]\s*,\s*\[\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*,\s*['"](\d{2})['"]\s*\]/g;
-            let rm;
-            while ((rm = rowRegex.exec(rawOldContent)) !== null) {
-                existingMap.set(rm[1], [rm[2], rm[3], rm[4], rm[5], rm[6]]);
-            }
-
-            // 寫對了：顯示「你寫：a, ok?」和「我 ok」按鈕
-            boxYouWrite.style.display = "block";
-
-        } catch (e) {
-            return;
-        }
+  try {
+    let url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+    let res = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+    if (res.ok) {
+      let resJson = await res.json();
+      sha = resJson.sha;
+      let rawContent = b64ToUtf8(resJson.content.replace(/\s/g, ''));
+      parseDataToMap(rawContent, githubDataMap);
+    } else {
+      setStatus('讀取 GitHub 失敗');
+      return;
     }
+  } catch (e) {
+    setStatus('連線失敗');
+    return;
+  }
 
-    async function doUpdate() {
-        const token = document.getElementById("tokenInput").value.trim().replace(/[^\x00-\x7F]/g, "");
+  let inputDataMap = new Map();
+  parseDataToMap(userText, inputDataMap);
 
-        for (let [date, nums] of inputMapData.entries()) {
-            existingMap.set(date, nums);
-        }
+  if (inputDataMap.size === 0) {
+    setStatus('解析失敗');
+    return;
+  }
 
-        let sortedDates = Array.from(existingMap.keys()).sort((a, b) => b.localeCompare(a));
-        let formattedRows = sortedDates.map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`);
+  let mergedMap = new Map(githubDataMap);
+  inputDataMap.forEach((v, k) => mergedMap.set(k, v));
 
-        let finalContent = `var ddd=[\n${formattedRows.join(',\n')}\n];\n` + (tailCode ? tailCode + "\n" : "");
+  let top6Dates = getTop6TargetDates();
 
-        try {
-            let putRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                body: JSON.stringify({
-                    message: `更新 ddd 資料`,
-                    content: btoa(unescape(encodeURIComponent(finalContent))),
-                    sha: currentSha
-                })
-            });
+  isUpdating = true;
 
-            if (putRes.ok) {
-                document.getElementById('inputData').value = "";
-                document.getElementById('boxYouWrite').style.display = "none";
-                
-                // 顯示「你 ok」與「你 +5列」
-                let top5 = sortedDates.slice(0, 5).map(d => `['${d}',[${existingMap.get(d).map(n=>`'${n}'`).join(',')}]]`).join(',\n') + ',';
-                document.getElementById('last5Box').value = top5;
-                document.getElementById('last5Row').style.display = "block";
-            }
-        } catch (e) {
-            return;
-        }
+  let htmlArr = [];
+  // 1. 上框 (綠色) 六列
+  htmlArr.push(`<div class="user-text">${userText.replace(/\n/g, '<br>')}</div>`);
+  
+  // 空列 (大框中間分隔)
+  htmlArr.push('<br>');
+
+  // 2. 下框 (藍色 / 紅色) 六列
+  htmlArr.push('<div class="bot-box">');
+  top6Dates.forEach(dateStr => {
+    if (mergedMap.has(dateStr)) {
+      let balls = mergedMap.get(dateStr);
+      htmlArr.push(`<div class="bot-blue">['${dateStr}',[${balls}]],</div>`);
+    } else {
+      htmlArr.push(`<div class="bot-red">['${dateStr}',['缺漏']],</div>`);
     }
+  });
+  htmlArr.push('</div>');
+
+  editor.innerHTML = htmlArr.join('');
+
+  let sel = window.getSelection();
+  let range = document.createRange();
+  let userTextEl = editor.querySelector('.user-text');
+  if (userTextEl) {
+    range.selectNodeContents(userTextEl);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  isUpdating = false;
+
+  let sortedAllDates = Array.from(mergedMap.keys()).sort((a, b) => b.localeCompare(a));
+  let finalLines = sortedAllDates.map(d => `['${d}',[${mergedMap.get(d)}]]`);
+  let finalFileContent = 'var ddd=[\n' + finalLines.join(',\n') + '\n];';
+
+  setStatus('寫入中...');
+
+  try {
+    let url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+    let putRes = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: '自動更新',
+        content: utf8ToB64(finalFileContent),
+        sha: sha
+      })
+    });
+
+    if (putRes.ok) {
+      setStatus('成功');
+    } else {
+      setStatus('寫入失敗');
+    }
+  } catch (e) {
+    setStatus('錯誤');
+  }
+}
 </script>
 
 </body>
