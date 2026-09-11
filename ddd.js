@@ -5970,8 +5970,8 @@ var idxDate = '2026-08-18';
 var baseIdx = ddd.findIndex(row => row[0] === idxDate);
 
 var zzz = ddd.map((row, i) => [
-  row[0],                               // 日期
-  row[1].slice().sort((a, b) => a - b), // 順球×5
-  row[1],                               // 落球×5
-  idx + (baseIdx - i)                   // index
+  row[0],                               // [日期,
+  row[1].slice().sort((a, b) => a - b), // [順球×5],
+  row[1],                               // [落球×5],
+  idx + (baseIdx - i)                   // index]
 ]);
