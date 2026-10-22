@@ -1,4 +1,7 @@
-var ddd=[
+UPDATED = "";
+NODATED = "";
+
+var ddd = [
 ['2026-10-21',['04','18','28','15','08']],
 ['2026-10-20',['30','36','38','15','01']],
 ['2026-10-19',['36','12','04','16','22']],
@@ -5996,5 +5999,24 @@ var ddd=[
 ['2007-01-04',['23','39','32','09','03']],
 ['2007-01-03',['23','22','30','29','27']],
 ['2007-01-02',['33','02','37','12','36']],
-['2007-01-01',['00','02','00','02','00']]
+['2007-01-01',['27','38','09','11','28']]
 ];
+
+var DATE = "";
+var WEEK = "";
+var TIME = "";
+
+function updateDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    DATE = `${year}-${month}-${day}`;
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+    WEEK = weekDays[now.getDay()];
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    TIME = `${hours}:${minutes}:${seconds}`;
+}
+updateDateTime();
