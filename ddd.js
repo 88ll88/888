@@ -5998,3 +5998,29 @@ var ddd=[
 ['2007-01-02',['33','02','37','12','36']],
 ['2007-01-01',['27','38','09','11','28']]
 ];
+var DATE = "";
+var WEEK = "";
+var TIME = "";
+
+function updateDateTime() {
+    const now = new Date();
+    
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    DATE = `${year}-${month}-${day}`;
+    
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+    WEEK = weekDays[now.getDay()];
+    
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    TIME = `${hours}:${minutes}:${seconds}`;
+}
+
+// 執行一次初始化
+updateDateTime();
+
+// 之後您隨時可以直接使用 DATE, WEEK, TIME 這三個變數
+console.log(DATE, WEEK, TIME);
