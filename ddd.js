@@ -1,3 +1,5 @@
+var UPDATED = "";
+
 var DATE = "";
 var WEEK = "";
 var TIME = "";
