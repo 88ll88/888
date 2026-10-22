@@ -5999,9 +5999,9 @@ var ddd=[
 ['2007-01-01',['27','38','09','11','28']]
 ];
  
-var DATE = "";
-var WEEK = "";
-var TIME = "";
+var DD = "";
+var WW = "";
+var TT = "";
 
 function updateDateTime() {
     const now = new Date();
@@ -6009,13 +6009,13 @@ function updateDateTime() {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    DATE = `${year}-${month}-${day}`;
+    DD = `${year}-${month}-${day}`;
     
     const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-    WEEK = weekDays[now.getDay()];
+    WW = weekDays[now.getDay()];
     
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    TIME = `${hours}:${minutes}:${seconds}`;
+    TT = `${hours}:${minutes}:${seconds}`;
 }
