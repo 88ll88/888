@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Token</title>
+    <title>token</title>
     <style>
         body {
             font-family: sans-serif;
@@ -13,7 +13,7 @@
         input[type="password"] {
             width: 620px;
             max-width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             padding: 4px;
             font-family: monospace;
             box-sizing: border-box;
@@ -60,7 +60,10 @@
 <body>
 
     <div>
-        <input type="password" id="githubToken" placeholder="GitHub Token" oninput="saveToken()">
+        <input type="password" id="token1" placeholder="88l88 的 GitHub Token" oninput="saveTokens()">
+    </div>
+    <div>
+        <input type="password" id="token2" placeholder="88ll88 的 GitHub Token" oninput="saveTokens()">
     </div>
 
     <div>
@@ -72,19 +75,21 @@
     <pre id="statusLog">等待輸入...</pre>
 
 <script>
-    // 已改成 88ll88 帳號
-    const GH_ACCOUNT = { GH_OWNER: '88ll88', GH_REPO: '888', GH_PATH: 'ddd.js' };
+    const GH_ACCOUNTS = [
+        { GH_OWNER: '88l88', GH_REPO: '888', GH_PATH: 'ddd.js', elementId: 'token1' },
+        { GH_OWNER: '88ll88', GH_REPO: '888', GH_PATH: 'ddd.js', elementId: 'token2' }
+    ];
 
     window.onload = function() {
-        const savedToken = localStorage.getItem('my_github_token');
-        if (savedToken) {
-            document.getElementById('githubToken').value = savedToken;
-        }
+        const savedToken1 = localStorage.getItem('token_88l88');
+        const savedToken2 = localStorage.getItem('token_88ll88');
+        if (savedToken1) document.getElementById('token1').value = savedToken1;
+        if (savedToken2) document.getElementById('token2').value = savedToken2;
     };
 
-    function saveToken() {
-        const token = document.getElementById('githubToken').value.trim();
-        localStorage.setItem('my_github_token', token);
+    function saveTokens() {
+        localStorage.setItem('token_88l88', document.getElementById('token1').value.trim());
+        localStorage.setItem('token_88ll88', document.getElementById('token2').value.trim());
     }
 
     function autoResize(textarea) {
@@ -113,13 +118,14 @@
     async function processAndUpdate() {
         if (isProcessing) return;
         
-        const tokenInput = document.getElementById('githubToken').value.trim();
+        const token1 = document.getElementById('token1').value.trim();
+        const token2 = document.getElementById('token2').value.trim();
         const inputArea = document.getElementById('inputData');
         const rawText = inputArea.value.trim();
         const statusResult = document.getElementById('statusResult');
         const statusLog = document.getElementById('statusLog');
 
-        if (!tokenInput || !rawText) return;
+        if (!token1 || !token2 || !rawText) return;
 
         isProcessing = true;
         statusResult.textContent = '處理中...';
@@ -166,78 +172,92 @@
 
         parsedEntries.sort((a, b) => b.date.localeCompare(a.date));
 
-        try {
-            const res = await fetch(`https://api.github.com/repos/${GH_ACCOUNT.GH_OWNER}/${GH_ACCOUNT.GH_REPO}/contents/${GH_ACCOUNT.GH_PATH}`, {
-                headers: {
-                    'Authorization': `token ${tokenInput}`,
-                    'Accept': 'application/vnd.github.v3+json'
+        let successCount = 0;
+        let lastFullContent = '';
+
+        for (let acc of GH_ACCOUNTS) {
+            const currentToken = document.getElementById(acc.elementId).value.trim();
+            if (!currentToken) continue;
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${acc.GH_OWNER}/${acc.GH_REPO}/contents/${acc.GH_PATH}`, {
+                    headers: {
+                        'Authorization': `token ${currentToken}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!res.ok) throw new Error('讀取失敗');
+                const fileData = await res.json();
+                const content = decodeUTF8(fileData.content);
+
+                const match = content.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
+                if (!match) throw new Error('找不到陣列');
+
+                const existingContent = match[1].trim();
+
+                let existingDatesMatch = existingContent.match(/'(\d{4}-\d{2}-\d{2})'/);
+                let latestExistingDate = existingDatesMatch ? existingDatesMatch[1] : '';
+
+                let validNewEntries = parsedEntries.filter(item => {
+                    return !latestExistingDate || item.date > latestExistingDate;
+                });
+
+                let uniqueMap = new Map();
+                validNewEntries.forEach(item => uniqueMap.set(item.date, item.balls));
+                
+                let finalNewEntries = [];
+                uniqueMap.forEach((balls, date) => {
+                    finalNewEntries.push({ date: date, balls: balls });
+                });
+
+                finalNewEntries.sort((a, b) => b.date.localeCompare(a.date));
+
+                let formattedNewLines = finalNewEntries.map(item => `['${item.date}',['${item.balls[0]}','${item.balls[1]}','${item.balls[2]}','${item.balls[3]}','${item.balls[4]}']],`).join('\n');
+
+                const newDddContent = `var ddd=[\n` + (formattedNewLines ? formattedNewLines + (existingContent ? '\n' : '') : '') + existingContent + `\n];`;
+                lastFullContent = content.replace(/var\s+ddd\s*=\s*\[[\s\S]*?\];/, newDddContent);
+
+                const updateRes = await fetch(`https://api.github.com/repos/${acc.GH_OWNER}/${acc.GH_REPO}/contents/${acc.GH_PATH}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${currentToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `Update ddd.js`,
+                        content: encodeUTF8(lastFullContent),
+                        sha: fileData.sha
+                    })
+                });
+
+                if (updateRes.ok) {
+                    successCount++;
                 }
-            });
 
-            if (!res.ok) throw new Error('讀取失敗');
-            const fileData = await res.json();
-            const content = decodeUTF8(fileData.content);
+                await new Promise(resolve => setTimeout(resolve, 400));
 
-            const match = content.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
-            if (!match) throw new Error('找不到陣列');
+            } catch (err) {
+                // 忽略錯誤
+            }
+        }
 
-            const existingContent = match[1].trim();
-
-            let existingDatesMatch = existingContent.match(/'(\d{4}-\d{2}-\d{2})'/);
-            let latestExistingDate = existingDatesMatch ? existingDatesMatch[1] : '';
-
-            let validNewEntries = parsedEntries.filter(item => {
-                return !latestExistingDate || item.date > latestExistingDate;
-            });
-
-            let uniqueMap = new Map();
-            validNewEntries.forEach(item => uniqueMap.set(item.date, item.balls));
-            
-            let finalNewEntries = [];
-            uniqueMap.forEach((balls, date) => {
-                finalNewEntries.push({ date: date, balls: balls });
-            });
-
-            finalNewEntries.sort((a, b) => b.date.localeCompare(a.date));
-
-            let formattedNewLines = finalNewEntries.map(item => `['${item.date}',['${item.balls[0]}','${item.balls[1]}','${item.balls[2]}','${item.balls[3]}','${item.balls[4]}']],`).join('\n');
-
-            const newDddContent = `var ddd=[\n` + (formattedNewLines ? formattedNewLines + (existingContent ? '\n' : '') : '') + existingContent + `\n];`;
-            let latestFullContent = content.replace(/var\s+ddd\s*=\s*\[[\s\S]*?\];/, newDddContent);
-
-            const updateRes = await fetch(`https://api.github.com/repos/${GH_ACCOUNT.GH_OWNER}/${GH_ACCOUNT.GH_REPO}/contents/${GH_ACCOUNT.GH_PATH}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${tokenInput}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: `Update ddd.js`,
-                    content: encodeUTF8(latestFullContent),
-                    sha: fileData.sha
-                })
-            });
-
-            if (updateRes.ok) {
-                const matchFinal = latestFullContent.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
-                if (matchFinal) {
-                    let innerLines = matchFinal[1].trim().split('\n').filter(l => l.trim() !== '');
-                    let countToTake = parsedEntries.length;
-                    let topLines = innerLines.slice(0, countToTake);
-                    
-                    statusLog.textContent = topLines.join('\n');
-                } else {
-                    statusLog.textContent = '';
-                }
-
-                statusResult.textContent = `${GH_ACCOUNT.GH_OWNER} OK`;
-                inputArea.value = '';
-                inputArea.style.height = '48px';
+        if (successCount === GH_ACCOUNTS.length) {
+            const matchFinal = lastFullContent.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
+            if (matchFinal) {
+                let innerLines = matchFinal[1].trim().split('\n').filter(l => l.trim() !== '');
+                let countToTake = parsedEntries.length;
+                let topLines = innerLines.slice(0, countToTake);
+                
+                statusLog.textContent = topLines.join('\n');
             } else {
-                statusResult.textContent = '更新失敗';
+                statusLog.textContent = '';
             }
 
-        } catch (err) {
+            statusResult.textContent = `88l88 OK 88ll88 OK`;
+            inputArea.value = '';
+            inputArea.style.height = '48px';
+        } else {
             statusResult.textContent = '更新失敗';
         }
 
