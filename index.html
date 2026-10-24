@@ -64,7 +64,7 @@
     </div>
 
     <div>
-        <textarea id="inputData" placeholder="請在此貼上資料..." oninput="handleInput(this)" onpaste="handlePaste(event)"></textarea>
+        <textarea id="inputData" placeholder="請在此貼上資料..." oninput="autoResize(this)" onpaste="handlePaste(event)"></textarea>
     </div>
 
     <div id="statusResult" class="status-box">尚未執行...</div>
@@ -72,10 +72,8 @@
     <pre id="statusLog">等待輸入...</pre>
 
 <script>
-    const GH_ACCOUNTS = [
-        { GH_OWNER: '88l88', GH_REPO: '888', GH_PATH: 'ddd.js' },
-        { GH_OWNER: '88ll88', GH_REPO: '888', GH_PATH: 'ddd.js' }
-    ];
+    // 已改成 88ll88 帳號
+    const GH_ACCOUNT = { GH_OWNER: '88ll88', GH_REPO: '888', GH_PATH: 'ddd.js' };
 
     window.onload = function() {
         const savedToken = localStorage.getItem('my_github_token');
@@ -109,16 +107,12 @@
             if (!isProcessing) {
                 processAndUpdate();
             }
-        }, 100);
-    }
-
-    function handleInput(textarea) {
-        autoResize(textarea);
+        }, 300);
     }
 
     async function processAndUpdate() {
         if (isProcessing) return;
-
+        
         const tokenInput = document.getElementById('githubToken').value.trim();
         const inputArea = document.getElementById('inputData');
         const rawText = inputArea.value.trim();
@@ -139,7 +133,6 @@
 
             const parts = line.split(/\s+/);
             
-            // 找出日期 (YYYY-MM-DD)
             let dateStr = '';
             let dateIdx = -1;
             for (let i = 0; i < parts.length; i++) {
@@ -151,7 +144,6 @@
             }
 
             if (dateIdx !== -1) {
-                // 從日期之後尋找連續 5 個兩位數的球號
                 let balls = [];
                 for (let j = dateIdx + 1; j < parts.length; j++) {
                     if (/^\d{1,2}$/.test(parts[j])) {
@@ -174,88 +166,78 @@
 
         parsedEntries.sort((a, b) => b.date.localeCompare(a.date));
 
-        let successCount = 0;
-        let latestFullContent = '';
+        try {
+            const res = await fetch(`https://api.github.com/repos/${GH_ACCOUNT.GH_OWNER}/${GH_ACCOUNT.GH_REPO}/contents/${GH_ACCOUNT.GH_PATH}`, {
+                headers: {
+                    'Authorization': `token ${tokenInput}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
 
-        for (let acc of GH_ACCOUNTS) {
-            try {
-                const res = await fetch(`https://api.github.com/repos/${acc.GH_OWNER}/${acc.GH_REPO}/contents/${acc.GH_PATH}`, {
-                    headers: {
-                        'Authorization': `token ${tokenInput}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
+            if (!res.ok) throw new Error('讀取失敗');
+            const fileData = await res.json();
+            const content = decodeUTF8(fileData.content);
 
-                if (!res.ok) throw new Error('讀取失敗');
-                const fileData = await res.json();
-                const content = decodeUTF8(fileData.content);
+            const match = content.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
+            if (!match) throw new Error('找不到陣列');
 
-                const match = content.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
-                if (!match) throw new Error('找不到陣列');
+            const existingContent = match[1].trim();
 
-                const existingContent = match[1].trim();
+            let existingDatesMatch = existingContent.match(/'(\d{4}-\d{2}-\d{2})'/);
+            let latestExistingDate = existingDatesMatch ? existingDatesMatch[1] : '';
 
-                let existingDatesMatch = existingContent.match(/'(\d{4}-\d{2}-\d{2})'/);
-                let latestExistingDate = existingDatesMatch ? existingDatesMatch[1] : '';
+            let validNewEntries = parsedEntries.filter(item => {
+                return !latestExistingDate || item.date > latestExistingDate;
+            });
 
-                let validNewEntries = parsedEntries.filter(item => {
-                    return !latestExistingDate || item.date > latestExistingDate;
-                });
+            let uniqueMap = new Map();
+            validNewEntries.forEach(item => uniqueMap.set(item.date, item.balls));
+            
+            let finalNewEntries = [];
+            uniqueMap.forEach((balls, date) => {
+                finalNewEntries.push({ date: date, balls: balls });
+            });
 
-                let uniqueMap = new Map();
-                validNewEntries.forEach(item => uniqueMap.set(item.date, item.balls));
-                
-                let finalNewEntries = [];
-                uniqueMap.forEach((balls, date) => {
-                    finalNewEntries.push({ date: date, balls: balls });
-                });
+            finalNewEntries.sort((a, b) => b.date.localeCompare(a.date));
 
-                finalNewEntries.sort((a, b) => b.date.localeCompare(a.date));
+            let formattedNewLines = finalNewEntries.map(item => `['${item.date}',['${item.balls[0]}','${item.balls[1]}','${item.balls[2]}','${item.balls[3]}','${item.balls[4]}']],`).join('\n');
 
-                let formattedNewLines = finalNewEntries.map(item => `['${item.date}',['${item.balls[0]}','${item.balls[1]}','${item.balls[2]}','${item.balls[3]}','${item.balls[4]}']],`).join('\n');
+            const newDddContent = `var ddd=[\n` + (formattedNewLines ? formattedNewLines + (existingContent ? '\n' : '') : '') + existingContent + `\n];`;
+            let latestFullContent = content.replace(/var\s+ddd\s*=\s*\[[\s\S]*?\];/, newDddContent);
 
-                const newDddContent = `var ddd=[\n` + (formattedNewLines ? formattedNewLines + (existingContent ? '\n' : '') : '') + existingContent + `\n];`;
-                latestFullContent = content.replace(/var\s+ddd\s*=\s*\[[\s\S]*?\];/, newDddContent);
+            const updateRes = await fetch(`https://api.github.com/repos/${GH_ACCOUNT.GH_OWNER}/${GH_ACCOUNT.GH_REPO}/contents/${GH_ACCOUNT.GH_PATH}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${tokenInput}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: `Update ddd.js`,
+                    content: encodeUTF8(latestFullContent),
+                    sha: fileData.sha
+                })
+            });
 
-                const updateRes = await fetch(`https://api.github.com/repos/${acc.GH_OWNER}/${acc.GH_REPO}/contents/${acc.GH_PATH}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${tokenInput}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: `Update ddd.js`,
-                        content: encodeUTF8(latestFullContent),
-                        sha: fileData.sha
-                    })
-                });
-
-                if (updateRes.ok) {
-                    successCount++;
+            if (updateRes.ok) {
+                const matchFinal = latestFullContent.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
+                if (matchFinal) {
+                    let innerLines = matchFinal[1].trim().split('\n').filter(l => l.trim() !== '');
+                    let countToTake = parsedEntries.length;
+                    let topLines = innerLines.slice(0, countToTake);
+                    
+                    statusLog.textContent = topLines.join('\n');
+                } else {
+                    statusLog.textContent = '';
                 }
 
-            } catch (err) {
-                // 不動
-            }
-        }
-
-        if (successCount === GH_ACCOUNTS.length) {
-            const matchFinal = latestFullContent.match(/var\s+ddd\s*=\s*\[([\s\S]*?)\];/);
-            if (matchFinal) {
-                let innerLines = matchFinal[1].trim().split('\n').filter(l => l.trim() !== '');
-                let countToTake = parsedEntries.length;
-                let topLines = innerLines.slice(0, countToTake);
-                
-                statusLog.textContent = topLines.join('\n');
+                statusResult.textContent = `${GH_ACCOUNT.GH_OWNER} OK`;
+                inputArea.value = '';
+                inputArea.style.height = '48px';
             } else {
-                statusLog.textContent = '';
+                statusResult.textContent = '更新失敗';
             }
 
-            statusResult.textContent = `88l88 OK 88ll88 OK`;
-
-            inputArea.value = '';
-            inputArea.style.height = '48px';
-        } else {
+        } catch (err) {
             statusResult.textContent = '更新失敗';
         }
 
